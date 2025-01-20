@@ -5,8 +5,13 @@ dev = [
 
 [project]
 dependencies = [
+  "crispy-tailwind>=1.0.3",
   "django>=5.1.5",
-  "django-environ>=0.12.0"
+  "django-allauth>=65.3.1",
+  "django-browser-reload>=1.17.0",
+  "django-crispy-forms>=2.3",
+  "django-environ>=0.12.0",
+  "django-tailwind-cli[django-extensions]>=2.21.1"
 ]
 description = "Transaction to Google Sheets"
 name = "trantrac"

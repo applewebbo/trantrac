@@ -199,3 +199,7 @@ cython_debug/
 
 # RUFF
 .ruff_cache/
+
+# BUN DEV STUFF
+node_modules/
+bun.lockb

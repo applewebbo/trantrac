@@ -12,13 +12,8 @@ bootstrap:
 
 # Run the local development server
 local:
-    python manage.py tailwind --settings=core.settings.dev runserver
+    python manage.py tailwind runserver
 
-
-# Run Django with DEBUG=False locally
-prod_local:
-    python manage.py collectstatic --noinput --settings=core.settings.dev
-    python manage.py runserver --settings=core.settings.dev --insecure
 
 # Install requirements
 requirements:

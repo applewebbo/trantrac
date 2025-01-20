@@ -1,0 +1,25 @@
+{% extends "base-simplified.html" %}
+{% load account crispy_forms_tags i18n static %}
+{% block content %}
+    <div class="my-8 mx-auto max-w-sm">
+        <h1 class="text-3xl font-medium tracking-tight leading-tight text-center md:text-2xl text-primary">
+            <span class="italic font-thin">Tran</span>Trac
+        </h1>
+        <form class="space-y-4 md:space-y-6"
+              method="post"
+              action="{% url 'account_login' %}">
+            {% csrf_token %}
+            {{ form|crispy }}
+            {% if redirect_field_value %}
+                <input type="hidden"
+                       name="{{ redirect_field_name }}"
+                       value="{{ redirect_field_value }}" />
+            {% endif %}
+            <div class="mb-3 text-sm text-right">
+                <a href="{% url 'account_reset_password' %}"
+                   class="link link-primary">{% translate "Forgot Password?" %}</a>
+            </div>
+            <button type="submit" class="w-full btn btn-primary">{% translate "Sign In" %}</button>
+        </form>
+    </div>
+{% endblock content %}

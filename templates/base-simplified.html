@@ -1,0 +1,22 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="Transactions Tracker">
+        <meta name="keywords"
+              content="transactions, tracker, money, budget, finance">
+        <title>
+            {% block page_title %}
+                Transactions Tracker
+            {% endblock page_title %}
+        </title>
+        <!-- TailwindCSS -->
+        <link rel="stylesheet" href="{% static 'css/tailwind.css' %}" />
+    </head>
+    <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+        {% block content %}
+        {% endblock content %}
+    </body>
+</html>

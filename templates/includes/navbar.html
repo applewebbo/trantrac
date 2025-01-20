@@ -1,0 +1,18 @@
+<div class="navbar bg-base-100">
+    <div class="flex-1">
+      <a href="#" class="text-xl font-bold"><span class="italic font-light">Tran</span>Trac</a>
+    </div>
+    {% if user.is_authenticated %}
+    <div class="flex-none">
+      <ul class="px-1 menu menu-horizontal">
+        <form action="{% url 'account_logout' %}" method="post">
+            {% csrf_token %}
+            <button type="submit"
+                    class="btn btn-primary btn-sm btn-outline">
+                Esci
+            </button>
+        </form>
+      </ul>
+    </div>
+    {% endif %}
+  </div>
