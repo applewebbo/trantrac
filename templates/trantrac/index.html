@@ -1,11 +1,12 @@
 {% extends 'base.html' %}
+{% load crispy_forms_tags %}
 
 {% block page_title %}
     Home Page
 {% endblock page_title %}
 
 {% block content %}
-<div class="container my-8 mx-auto max-w-screen-lg">
-    <h1 class="text-4xl">Home Page</h1>
+<div class="container my-8 mx-auto max-w-screen-sm">
+    {% crispy form %}
 </div>
 {% endblock content %}

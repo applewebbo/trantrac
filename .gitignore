@@ -203,3 +203,7 @@ cython_debug/
 # BUN DEV STUFF
 node_modules/
 bun.lockb
+
+# STATIC
+staticfiles/
+static/css/tailwind.css
