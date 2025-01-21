@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "crispy_tailwind",
     "django_browser_reload",
     "django_extensions",
+    "django_htmx",
     "django_tailwind_cli",
     # Internal Apps
     "trantrac",
@@ -59,6 +60,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_browser_reload.middleware.BrowserReloadMiddleware",
+    "django_htmx.middleware.HtmxMiddleware",
 ]
 
 ROOT_URLCONF = "core.urls"

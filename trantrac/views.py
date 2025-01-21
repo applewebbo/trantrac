@@ -6,7 +6,17 @@ from trantrac.forms import TransactionForm
 
 @login_required
 def index(request):
-    form = TransactionForm(request.POST or None)
-    user = request.user
-    context = {"form": form, "user": user}
-    return render(request, "trantrac/index.html", context)
+    if request.method == "POST":
+        form = TransactionForm(request.POST)
+        if form.is_valid():
+            amount = form.cleaned_data["amount"]
+            print(amount)
+            return render(request, "trantrac/transaction_ok.html")
+    else:
+        form = TransactionForm()
+
+    context = {"form": form, "user": request.user}
+    if request.htmx:
+        return render(request, "trantrac/transaction_form.html", context)
+    else:
+        return render(request, "trantrac/index.html", context)

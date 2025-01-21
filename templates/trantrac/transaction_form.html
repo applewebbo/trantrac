@@ -1,0 +1,6 @@
+{% load crispy_forms_tags %}
+<form hx-post="{% url 'index' %}"
+      hx-target="#transaction_form"
+      hx-swap="innerHTML">
+    {% crispy form %}
+</form>

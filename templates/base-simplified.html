@@ -1,4 +1,4 @@
-{% load static %}
+{% load django_htmx static %}
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -18,5 +18,8 @@
     <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
         {% block content %}
         {% endblock content %}
+        <!-- HTMX -->
+        <script src="{% static 'js/htmx.min.js' %}"></script>
+        {% django_htmx_script %}
     </body>
 </html>

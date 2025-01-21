@@ -11,6 +11,7 @@ dependencies = [
   "django-browser-reload>=1.17.0",
   "django-crispy-forms>=2.3",
   "django-environ>=0.12.0",
+  "django-htmx>=1.21.0",
   "django-tailwind-cli[django-extensions]>=2.21.1"
 ]
 description = "Transaction to Google Sheets"
