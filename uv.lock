@@ -274,6 +274,20 @@ wheels = [
 ]
 
 [[package]]
+name = "heroicons"
+version = "2.10.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d5/10/46f53e0b221fdbcb469a34e69f72d497c83051a4138e67c81673175c13ef/heroicons-2.10.0.tar.gz", hash = "sha256:3e739e1ca74e126874d02385b7ada988b589bd579a4e3932b98a2c5e0dccb75a", size = 420248 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c1/ad/290ce8d66543fa4c3ed6dedcddcd2c60644b8a8177a739ce28731eac69d7/heroicons-2.10.0-py3-none-any.whl", hash = "sha256:af8a525c5691c66c4f8a7544210109c578c6a65625db6f3bee529512968c3882", size = 414890 },
+]
+
+[package.optional-dependencies]
+django = [
+    { name = "django" },
+]
+
+[[package]]
 name = "httplib2"
 version = "0.22.0"
 source = { registry = "https://pypi.org/simple" }
@@ -463,6 +477,7 @@ dependencies = [
     { name = "django-tailwind-cli", extra = ["django-extensions"] },
     { name = "google-api-python-client" },
     { name = "google-auth" },
+    { name = "heroicons", extra = ["django"] },
 ]
 
 [package.dev-dependencies]
@@ -482,6 +497,7 @@ requires-dist = [
     { name = "django-tailwind-cli", extras = ["django-extensions"], specifier = ">=2.21.1" },
     { name = "google-api-python-client", specifier = ">=2.159.0" },
     { name = "google-auth", specifier = ">=2.37.0" },
+    { name = "heroicons", extras = ["django"], specifier = ">=2.10.0" },
 ]
 
 [package.metadata.requires-dev]
