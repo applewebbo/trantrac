@@ -10,6 +10,14 @@ from trantrac.models import Account, Category
 class DateInput(forms.widgets.DateInput):
     input_type = "date"
 
+    # return ISO format date with LANGUAGE_CODE it-it
+    def format_value(self, value):
+        if isinstance(value, str):
+            return value
+        if value is None:
+            return ""
+        return value.strftime("%Y-%m-%d")
+
 
 class TransactionForm(forms.Form):
     amount = forms.DecimalField(max_digits=10, decimal_places=2, label="Importo")

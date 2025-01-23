@@ -128,9 +128,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "it-it"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Europe/Rome"
 
 USE_I18N = True
 
@@ -162,7 +162,6 @@ AUTHENTICATION_BACKENDS = (
     "allauth.account.auth_backends.AuthenticationBackend",
 )
 
-ACCOUNT_FORMS = {"signup": "users.forms.MyCustomSignupForm"}
 
 SITE_ID = 1
 

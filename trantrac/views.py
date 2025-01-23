@@ -22,7 +22,7 @@ def save_to_sheet(values):
             .values()
             .append(
                 spreadsheetId=settings.GOOGLE_SHEETS_SPREADSHEET_ID,
-                range="Foglio1!A:C",
+                range="TRANSAZIONI!A:C",
                 valueInputOption="USER_ENTERED",
                 insertDataOption="INSERT_ROWS",
                 body=body,
@@ -42,9 +42,10 @@ def index(request):
         if form.is_valid():
             values = [
                 [
-                    str(request.user),
+                    str(request.user.display_name),
                     form.cleaned_data["date"].strftime("%Y-%m-%d"),
-                    str(form.cleaned_data["amount"]),
+                    str(form.cleaned_data["amount"]).replace(".", ","),
+                    str(form.cleaned_data["description"]),
                 ]
             ]
 
