@@ -1,10 +1,10 @@
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-from trantrac.forms import TransactionForm
+from trantrac.forms import CategoryForm, TransactionForm
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
@@ -62,3 +62,11 @@ def index(request):
         return render(request, "trantrac/transaction_form.html", context)
     else:
         return render(request, "trantrac/index.html", context)
+
+
+def add_category(request):
+    form = CategoryForm(request.POST or None)
+    if form.is_valid():
+        form.save()
+        return redirect("index")
+    return render(request, "trantrac/add_category.html", {"form": form})
