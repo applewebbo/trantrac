@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Submit
+from crispy_forms.layout import HTML, Div, Layout, Submit
 from django import forms
 
 from trantrac.models import Account, Category
@@ -32,13 +32,22 @@ class TransactionForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.form_tag = False
+        self.helper.label_class = "block text-base-content text-sm font-bold mb-2"
         self.fields["date"].initial = datetime.now(timezone.utc)
         self.fields["bank_account"].initial = Account.objects.first()
+        self.fields["category"].empty_label = "Seleziona categoria"
+        self.helper.field_class = "grow mb-3"
         self.helper.layout = Layout(
             "amount",
             "date",
             "description",
-            "category",
+            Div(
+                "category",
+                HTML(
+                    "<button class='btn btn-sm btn-primary'>{% heroicon_mini 'plus' %}</button>"
+                ),
+                css_class="flex gap-x-6 gap-y-2 items-center",
+            ),
             "bank_account",
             Submit(
                 "submit",

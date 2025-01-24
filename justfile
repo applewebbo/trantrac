@@ -12,7 +12,7 @@ bootstrap:
 
 # Run the local development server
 local:
-    python manage.py tailwind runserver
+    uv run python manage.py tailwind runserver
 
 
 # Install requirements
