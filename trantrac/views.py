@@ -1,10 +1,13 @@
+import csv
+
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+from io import TextIOWrapper
 
-from trantrac.forms import CategoryForm, TransactionForm
+from trantrac.forms import CategoryForm, TransactionForm, CsvUploadForm
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
@@ -33,6 +36,32 @@ def save_to_sheet(values):
         return result.get("updates").get("updatedRows") == 1
     finally:
         service.close()
+
+
+def import_csv_to_sheet(csv_file):
+    # Convert the uploaded file to text mode
+    file = TextIOWrapper(csv_file.file, encoding="utf-8")
+    csv_reader = csv.DictReader(file)
+
+    for row in csv_reader:
+        # Prepare values in the required format
+        values = [
+            [
+                row["Data operazione"],
+                row["Descrizione"],
+                row["Importo"],
+                row["Categoria"],
+                row["Sottocategoria"],
+            ]
+        ]
+
+        # Save to Google Sheet
+        success = save_to_sheet(values)
+
+        if success:
+            return True
+
+    return False
 
 
 @login_required
@@ -72,3 +101,9 @@ def add_category(request):
         form.save()
         return redirect("index")
     return render(request, "trantrac/add_category.html", {"form": form})
+
+
+@login_required
+def upload_csv(request):
+    form = CsvUploadForm()
+    return render(request, "trantrac/upload_csv.html", {"form": form})

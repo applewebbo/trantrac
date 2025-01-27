@@ -3,14 +3,19 @@
     <a href="{% url 'index' %}"
        class="flex items-center space-x-3 rtl:space-x-reverse grow">
       {% heroicon_outline "banknotes" class="size-7" %}
-      <div class="self-center text-2xl font-semibold tracking-tight whitespace-nowrap"><span class="italic font-light">Tran</span>Trac</div>
+      <div class="self-center text-2xl font-semibold tracking-tight whitespace-nowrap">
+        <span class="italic font-light">Tran</span>Trac
+      </div>
     </a>
     {% if user.is_authenticated %}
-      <div class="flex-none">
-          <form action="{% url 'account_logout' %}" method="post">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-primary btn-sm btn-outline">Esci</button>
-          </form>
+      <div class="flex gap-x-2 items-center">
+        <a href="{% url 'upload_csv' %}" class="btn btn-sm btn-primary btn-outline">
+          {% heroicon_micro 'document-arrow-up' class='size-5' %}
+        </a>
+        <form action="{% url 'account_logout' %}" method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary btn-sm btn-outline">Esci</button>
+        </form>
       </div>
     {% endif %}
   </div>

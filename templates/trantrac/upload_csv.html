@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block page_title %}
+    Aggiungi Categoria
+{% endblock page_title %}
+
+{% block content %}
+    <div class="container my-8 mx-auto max-w-screen-sm">
+        <form action="{% url 'upload_csv' %}" method="post">
+            {% crispy form %}
+        </form>
+    </div>
+{% endblock content %}

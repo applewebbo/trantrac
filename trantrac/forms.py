@@ -78,3 +78,23 @@ class CategoryForm(forms.ModelForm):
                 css_class="w-full mt-3",
             ),
         )
+
+
+class CsvUploadForm(forms.Form):
+    csv_file = forms.FileField(label="File CSV")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.fields["csv_file"].label = False
+        self.helper.layout = Layout(
+            Field(
+                "csv_file", css_class="bg-gray-50 file-input file-input-primary w-full"
+            ),
+            Submit(
+                "submit",
+                "Carica",
+                css_class="w-full mt-3",
+            ),
+        )
