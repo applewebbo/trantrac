@@ -83,6 +83,13 @@ class CategoryForm(forms.ModelForm):
 class CsvUploadForm(forms.Form):
     csv_file = forms.FileField(label="File CSV")
 
+    def clean_file(self):
+        file = self.cleaned_data.get("file")
+        ext = file.name.split(".")[-1].lower()
+        if ext not in ["csv"]:
+            raise forms.ValidationError("Il file deve essere in formato csv")
+        return file
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()

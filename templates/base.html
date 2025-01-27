@@ -19,7 +19,12 @@
         <div class="container mx-auto mb-8 max-w-screen-lg">{% include 'includes/navbar.html' %}</div>
         {% block content %}
         {% endblock content %}
+        <!-- Messages -->
+        <div id="messages" class="z-3" hx-boost="true">{% include 'includes/messages.html' %}</div>
+        <!-- HTMX -->
         <script src="{% static 'js/htmx.min.js' %}"></script>
+        <!-- AlpineJS -->
+        <script src="{% static 'js/alpine.min.js' %}"></script>
         {% django_htmx_script %}
     </body>
 </html>

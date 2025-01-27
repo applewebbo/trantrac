@@ -1,13 +1,16 @@
 import csv
-
-from django.conf import settings
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
 from io import TextIOWrapper
 
-from trantrac.forms import CategoryForm, TransactionForm, CsvUploadForm
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+from django.shortcuts import redirect
+from django.template.response import TemplateResponse
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+
+from trantrac.forms import CategoryForm, CsvUploadForm, TransactionForm
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
@@ -40,9 +43,26 @@ def save_to_sheet(values):
 
 
 def import_csv_to_sheet(csv_file, user):
+    # Required columns for the CSV
+    REQUIRED_COLUMNS = {
+        "Data operazione",
+        "Importo",
+        "Descrizione",
+        "Categoria",
+        "Sottocategoria",
+        "Codice identificativo",
+    }
+
     # Convert the uploaded file to text mode
     file = TextIOWrapper(csv_file.file, encoding="utf-8")
     csv_reader = csv.DictReader(file)
+
+    # Validate columns
+    file_columns = set(csv_reader.fieldnames)
+    missing_columns = REQUIRED_COLUMNS - file_columns
+
+    if missing_columns:
+        raise ValueError(f"Colonne richieste mancanti: {', '.join(missing_columns)}")
 
     # Convert to list to access rows
     rows = list(csv_reader)
@@ -54,9 +74,11 @@ def import_csv_to_sheet(csv_file, user):
             str(user.display_name),
             row["Data operazione"],
             row["Importo"].replace("+", "").replace(".", ""),
-            (row["Descrizione"][:37] + "...")
-            if len(row["Descrizione"]) > 50
-            else row["Descrizione"],
+            (
+                (row["Descrizione"][:37] + "...")
+                if len(row["Descrizione"]) > 50
+                else row["Descrizione"]
+            ),
             row["Categoria"],
             row["Sottocategoria"],
             "Comune",
@@ -88,18 +110,27 @@ def index(request):
             ]
 
             if save_to_sheet(values):
-                return render(request, "trantrac/transaction_ok.html")
+                messages.add_message(
+                    request,
+                    messages.SUCCESS,
+                    "Transazione aggiunta con successo",
+                )
             else:
-                return render(request, "trantrac/transaction_error.html")
+                messages.add_message(
+                    request,
+                    messages.ERROR,
+                    "Ops.. qualcosa è andato storto",
+                )
+            return HttpResponse(status=204, headers={"HX-Refresh": "true"})
 
     else:
         form = TransactionForm()
 
     context = {"form": form, "user": request.user}
     if request.htmx:
-        return render(request, "trantrac/transaction_form.html", context)
+        return TemplateResponse(request, "trantrac/transaction_form.html", context)
     else:
-        return render(request, "trantrac/index.html", context)
+        return TemplateResponse(request, "trantrac/index.html", context)
 
 
 def add_category(request):
@@ -107,7 +138,7 @@ def add_category(request):
     if form.is_valid():
         form.save()
         return redirect("index")
-    return render(request, "trantrac/add_category.html", {"form": form})
+    return TemplateResponse(request, "trantrac/add_category.html", {"form": form})
 
 
 @login_required
@@ -117,9 +148,9 @@ def upload_csv(request):
         print(request.FILES["csv_file"])
         if form.is_valid():
             if import_csv_to_sheet(request.FILES["csv_file"], request.user):
-                return render(request, "trantrac/upload_csv_ok.html")
+                return TemplateResponse(request, "trantrac/upload_csv_ok.html")
             else:
-                return render(request, "trantrac/upload_csv_error.html")
+                return TemplateResponse(request, "trantrac/upload_csv_error.html")
     else:
         form = CsvUploadForm()
-    return render(request, "trantrac/upload_csv.html", {"form": form})
+    return TemplateResponse(request, "trantrac/upload_csv.html", {"form": form})
