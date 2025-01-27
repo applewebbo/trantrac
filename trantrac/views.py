@@ -33,35 +33,42 @@ def save_to_sheet(values):
             .execute()
         )
 
-        return result.get("updates").get("updatedRows") == 1
+        expected_rows = len(values)
+        return result.get("updates").get("updatedRows") == expected_rows
     finally:
         service.close()
 
 
-def import_csv_to_sheet(csv_file):
+def import_csv_to_sheet(csv_file, user):
     # Convert the uploaded file to text mode
     file = TextIOWrapper(csv_file.file, encoding="utf-8")
     csv_reader = csv.DictReader(file)
 
-    for row in csv_reader:
-        # Prepare values in the required format
-        values = [
-            [
-                row["Data operazione"],
-                row["Descrizione"],
-                row["Importo"],
-                row["Categoria"],
-                row["Sottocategoria"],
-            ]
+    # Convert to list to access rows
+    rows = list(csv_reader)
+    # Remove the last row
+    rows = rows[:-1]
+
+    values = [
+        [
+            str(user.display_name),
+            row["Data operazione"],
+            row["Importo"].replace("+", "").replace(".", ""),
+            (row["Descrizione"][:37] + "...")
+            if len(row["Descrizione"]) > 50
+            else row["Descrizione"],
+            row["Categoria"],
+            row["Sottocategoria"],
+            "Comune",
+            row["Codice identificativo"],
         ]
+        for row in rows
+    ]
 
-        # Save to Google Sheet
-        success = save_to_sheet(values)
-
-        if success:
-            return True
-
-    return False
+    # Save to Google Sheet
+    success = save_to_sheet(values)
+    print(success)
+    return success
 
 
 @login_required
@@ -105,5 +112,14 @@ def add_category(request):
 
 @login_required
 def upload_csv(request):
-    form = CsvUploadForm()
+    if request.method == "POST":
+        form = CsvUploadForm(request.POST, request.FILES)
+        print(request.FILES["csv_file"])
+        if form.is_valid():
+            if import_csv_to_sheet(request.FILES["csv_file"], request.user):
+                return render(request, "trantrac/upload_csv_ok.html")
+            else:
+                return render(request, "trantrac/upload_csv_error.html")
+    else:
+        form = CsvUploadForm()
     return render(request, "trantrac/upload_csv.html", {"form": form})

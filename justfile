@@ -47,6 +47,9 @@ lint:
 _pre-commit *args:
     uvx --with pre-commit-uv pre-commit {{ args }}
 
+secure:
+    uv-secure
+
 docker_up:
     docker compose up -d
 
