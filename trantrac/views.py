@@ -148,9 +148,18 @@ def upload_csv(request):
         print(request.FILES["csv_file"])
         if form.is_valid():
             if import_csv_to_sheet(request.FILES["csv_file"], request.user):
-                return TemplateResponse(request, "trantrac/upload_csv_ok.html")
+                messages.add_message(
+                    request,
+                    messages.SUCCESS,
+                    "File importato con successo",
+                )
             else:
-                return TemplateResponse(request, "trantrac/upload_csv_error.html")
+                messages.add_message(
+                    request,
+                    messages.ERROR,
+                    "Ops.. qualcosa è andato storto",
+                )
+            return redirect("index")
     else:
         form = CsvUploadForm()
     return TemplateResponse(request, "trantrac/upload_csv.html", {"form": form})
