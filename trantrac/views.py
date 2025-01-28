@@ -60,14 +60,28 @@ def import_csv_to_sheet(csv_file, user):
     # Validate columns
     file_columns = set(csv_reader.fieldnames)
     missing_columns = REQUIRED_COLUMNS - file_columns
-
     if missing_columns:
-        raise ValueError(f"Colonne richieste mancanti: {', '.join(missing_columns)}")
+        message = f"Il file CSV non contiene le seguenti colonne: {', '.join(missing_columns)}"
+        return False, message
 
-    # Convert to list to access rows
+    # Convert to list and filter out empty rows and saldo row
     rows = list(csv_reader)
-    # Remove the last row
-    rows = rows[:-1]
+    rows = [
+        row
+        for row in rows
+        if any(row.values()) and not any("Saldo" in value for value in row.values())
+    ]
+
+    # Validate 'Importo' values
+    for index, row in enumerate(rows, start=1):
+        importo = (
+            row["Importo"].replace("+", "").replace(".", "").replace(",", "").strip()
+        )
+        try:
+            float(importo)
+        except ValueError:
+            message = "Il file CSV contiene valori non numerici nella colonna Importo."
+            return False, message
 
     values = [
         [
@@ -89,8 +103,13 @@ def import_csv_to_sheet(csv_file, user):
 
     # Save to Google Sheet
     success = save_to_sheet(values)
-    print(success)
-    return success
+
+    if success:
+        message = "File importato con successo"
+    else:
+        message = "Ops, qualcosa è andato storto.."
+
+    return success, message
 
 
 @login_required
@@ -147,18 +166,15 @@ def upload_csv(request):
         form = CsvUploadForm(request.POST, request.FILES)
         print(request.FILES["csv_file"])
         if form.is_valid():
-            if import_csv_to_sheet(request.FILES["csv_file"], request.user):
-                messages.add_message(
-                    request,
-                    messages.SUCCESS,
-                    "File importato con successo",
-                )
-            else:
-                messages.add_message(
-                    request,
-                    messages.ERROR,
-                    "Ops.. qualcosa è andato storto",
-                )
+            success, message = import_csv_to_sheet(
+                request.FILES["csv_file"], request.user
+            )
+            messages.add_message(
+                request,
+                messages.SUCCESS if success else messages.ERROR,
+                message,
+            )
+
             return redirect("index")
     else:
         form = CsvUploadForm()

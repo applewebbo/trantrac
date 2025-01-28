@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import HTML, Div, Layout, Submit, Field
+from crispy_forms.layout import HTML, Div, Field, Layout, Submit
 from django import forms
 
 from trantrac.models import Account, Category
@@ -81,7 +81,9 @@ class CategoryForm(forms.ModelForm):
 
 
 class CsvUploadForm(forms.Form):
-    csv_file = forms.FileField(label="File CSV")
+    csv_file = forms.FileField(
+        label="File CSV", help_text="Scarica il file nel formato csv a 1 colonna"
+    )
 
     def clean_file(self):
         file = self.cleaned_data.get("file")
@@ -95,6 +97,7 @@ class CsvUploadForm(forms.Form):
         self.helper = FormHelper()
         self.helper.form_tag = False
         self.fields["csv_file"].label = False
+        self.helper.help_text_inline = True
         self.helper.layout = Layout(
             Field(
                 "csv_file", css_class="bg-gray-50 file-input file-input-primary w-full"
