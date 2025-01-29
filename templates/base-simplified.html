@@ -16,10 +16,16 @@
         <link rel="stylesheet" href="{% static 'css/tailwind.css' %}" />
     </head>
     <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-        {% block content %}
-        {% endblock content %}
+        <div class="container my-8 mx-auto max-w-screen-sm">
+            {% block content %}
+            {% endblock content %}
+        </div>
+        <!-- Messages -->
+        <div id="messages" class="z-3" hx-boost="true">{% include 'includes/messages.html' %}</div>
         <!-- HTMX -->
         <script src="{% static 'js/htmx.min.js' %}"></script>
+        <!-- AlpineJS -->
+        <script src="{% static 'js/alpine.min.js' %}"></script>
         {% django_htmx_script %}
     </body>
 </html>

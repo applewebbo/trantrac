@@ -1,36 +1,39 @@
-{% load heroicons %}
 {% if messages %}
-    <div class="toast toast-top toast-center">
+    <div id="toast_container" class="fixed inset-x-0 top-3">
         {% for message in messages %}
-            <div class="flex items-center p-4 w-full max-w-md rounded-lg border-2 shadow md:max-w-xl text-pretty text-base-content bg-base-100 border-base-300 md:text-nowrap"
+            <div class="flex justify-between items-center p-4 mx-auto mb-3 w-full max-w-xs rounded-lg shadow-sm sm:max-w-sm md:max-w-lg lg:max-w-xl text-base-content bg-base-300"
                  role="alert"
                  x-cloak
                  x-data="{ show: true }"
                  x-show="show"
                  x-init="setTimeout(() => show = false, 3000)">
-                <div>
+                <div class="flex items-center">
                     {% if message.tags == 'info' %}
-                        {% heroicon_mini 'information-circle' class="w-5 h-5 text-info" %}
+                        {% heroicon_mini "information-circle" class="size-5 text-info" %}
+                        <span class="sr-only">Info icon</span>
                     {% elif message.tags == 'success' %}
-                        {% heroicon_mini 'check-circle' class="w-5 h-5 text-success" %}
+                        {% heroicon_mini "check-circle" class="size-5 text-success" %}
+                        <span class="sr-only">Check icon</span>
                     {% elif message.tags == 'error' %}
-                        {% heroicon_mini 'exclamation-circle' class="w-5 h-5 text-error" %}
+                        {% heroicon_mini "exclamation-circle" class="size-5 text-error" %}
+                        <span class="sr-only">Red exclamation icon</span>
                     {% elif message.tags == 'warning' %}
-                        {% heroicon_mini 'bell' class="w-5 h-5 text-warning" %}
+                        {% heroicon_mini "exclamation-circle" class="size-5 text-warning" %}
+                        <span class="sr-only">Yellow exclamation icon</span>
                     {% elif message.tags == 'debug' %}
-                        {% heroicon_mini 'bug-ant' class="w-5 h-5 text-neutral" %}
+                        % heroicon_mini "bug-ant" class="size-5 text-accent" %}
+                        <span class="sr-only">Bug ant icon</span>
                     {% endif %}
-                    <span class="sr-only">Info</span>
+                    <div class="text-sm font-normal ms-3">{{ message|safe }}</div>
                 </div>
-                <div class="text-sm font-normal ms-3 me-1">{{ message|safe }}</div>
-                <button type="button"
-                        class="inline-flex justify-center items-center p-1.5 -my-1.5 -mx-1.5 w-8 h-8 rounded-lg hover:text-gray-900 ms-auto text-base-content bg-base-100 hover:bg-base-200"
+                <button class="btn btn-sm btn-circle"
+                        type="button"
                         @click="show = !show"
                         aria-label="Close">
                     <span class="sr-only">Close</span>
-                    {% heroicon_mini "x-mark" class="w-5 h-5" %}
+                    {% heroicon_solid "x-mark" class="size-5" %}
                 </button>
             </div>
         {% endfor %}
-    {% endif %}
-</div>
+    </div>
+{% endif %}

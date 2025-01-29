@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
+from django.urls import reverse
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
@@ -175,7 +176,7 @@ def upload_csv(request):
                 message,
             )
 
-            return redirect("index")
+            return HttpResponse(status=204, headers={"HX-Redirect": reverse("index")})
     else:
         form = CsvUploadForm()
     return TemplateResponse(request, "trantrac/upload_csv.html", {"form": form})
