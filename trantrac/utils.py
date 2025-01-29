@@ -5,12 +5,10 @@ from django.conf import settings
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-
 
 def save_to_sheet(values):
     credentials = service_account.Credentials.from_service_account_info(
-        settings.GOOGLE_SHEETS_CREDENTIALS, scopes=SCOPES
+        settings.GOOGLE_SHEETS_CREDENTIALS, scopes=settings.SCOPES
     )
     service = build("sheets", "v4", credentials=credentials)
 
@@ -103,3 +101,7 @@ def import_csv_to_sheet(csv_file, user):
         message = "Ops, qualcosa è andato storto.."
 
     return success, message
+
+
+def refresh_category():
+    pass

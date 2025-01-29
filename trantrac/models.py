@@ -1,14 +1,12 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-
-def save_to_sheet(values):
+def save_category_and_sub_to_sheet(values):
     credentials = service_account.Credentials.from_service_account_info(
-        settings.GOOGLE_SHEETS_CREDENTIALS, scopes=SCOPES
+        settings.GOOGLE_SHEETS_CREDENTIALS, scopes=settings.SCOPES
     )
     service = build("sheets", "v4", credentials=credentials)
 
@@ -19,7 +17,7 @@ def save_to_sheet(values):
             .values()
             .append(
                 spreadsheetId=settings.GOOGLE_SHEETS_SPREADSHEET_ID,
-                range="CATEGORIE!A:A",
+                range="CATEGORIE!A:B",
                 valueInputOption="USER_ENTERED",
                 insertDataOption="INSERT_ROWS",
                 body=body,
@@ -42,9 +40,21 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+
+class Subcategory(models.Model):
+    name = models.CharField(max_length=100)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = "sottocategoria"
+        verbose_name_plural = "sottocategorie"
+
+    def __str__(self):
+        return self.name
+
     def save(self, *args, **kwargs):
-        values = [[self.name]]
-        save_to_sheet(values)
+        values = [[self.category.name, self.name]]
+        save_category_and_sub_to_sheet(values)
         super().save(*args, **kwargs)
 
 

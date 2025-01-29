@@ -75,3 +75,8 @@ def upload_csv(request):
     else:
         form = CsvUploadForm()
     return TemplateResponse(request, "trantrac/upload_csv.html", {"form": form})
+
+
+@login_required
+def refresh_categories(request):
+    pass

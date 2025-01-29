@@ -199,3 +199,4 @@ GOOGLE_SHEETS_CREDENTIALS = {
 }
 
 GOOGLE_SHEETS_SPREADSHEET_ID = env("GOOGLE_SHEETS_SPREADSHEET_ID")
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
