@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block page_title %}
+    Aggiungi Sottocategoria
+{% endblock page_title %}
+
+{% block content %}
+    <div class="container my-8 mx-auto max-w-screen-sm">
+        <form action="{% url 'add_subcategory' %}" method="post">
+            {% crispy form %}
+        </form>
+    </div>
+{% endblock content %}

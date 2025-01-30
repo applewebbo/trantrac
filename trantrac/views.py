@@ -5,7 +5,7 @@ from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
 
-from trantrac.forms import CategoryForm, CsvUploadForm, TransactionForm
+from trantrac.forms import CategoryForm, CsvUploadForm, TransactionForm, SubcategoryForm
 from trantrac.utils import import_csv_to_sheet, save_to_sheet
 from trantrac.models import Subcategory
 
@@ -54,8 +54,33 @@ def add_category(request):
     form = CategoryForm(request.POST or None)
     if form.is_valid():
         form.save()
+        messages.add_message(
+            request,
+            messages.SUCCESS,
+            "Categoria aggiunta con successo",
+        )
         return redirect("index")
     return TemplateResponse(request, "trantrac/add_category.html", {"form": form})
+
+
+def add_subcategory(request):
+    category_id = request.GET.get("category")
+    initial = {"category": category_id} if category_id else {}
+
+    if request.method == "POST":
+        form = SubcategoryForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.add_message(
+                request,
+                messages.SUCCESS,
+                "Sottocategoria aggiunta con successo",
+            )
+            return redirect("index")
+    else:
+        form = SubcategoryForm(initial=initial)
+
+    return TemplateResponse(request, "trantrac/add_subcategory.html", {"form": form})
 
 
 @login_required

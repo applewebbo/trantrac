@@ -10,6 +10,14 @@ from trantrac.models import Account, Category, Subcategory
 HTML_ADD_BUTTON = """
     <a href="{% url 'add_category' %}" class='btn btn-sm btn-primary'>{% heroicon_mini 'plus' %}</a>
     """
+HTML_ADD_SUBCATEGORY_BUTTON = """
+    <a href="{% url 'add_subcategory' %}?category="
+       class='btn btn-sm btn-primary'
+       x-bind:class="{ 'btn-disabled': !hasCategory }"
+       @click.prevent="window.location.href = '{% url 'add_subcategory' %}?category=' + $refs.categorySelect.value">
+        {% heroicon_mini 'plus' %}
+    </a>
+"""
 
 
 class DateInput(forms.widgets.DateInput):
@@ -64,6 +72,8 @@ class TransactionForm(forms.Form):
                 Div(
                     Field(
                         "category",
+                        x_ref="categorySelect",
+                        autocomplete="off",
                         **{
                             "@change": "hasCategory = $event.target.value !== ''",
                         },
@@ -75,10 +85,14 @@ class TransactionForm(forms.Form):
                     hx_target="#id_subcategory",
                     hx_include="[name='category']",
                 ),
-                Field(
-                    "subcategory",
-                    css_class="bg-gray-50",
-                    **{"x-bind:disabled": "!hasCategory"},
+                Div(
+                    Field(
+                        "subcategory",
+                        css_class="bg-gray-50",
+                        **{"x-bind:disabled": "!hasCategory"},
+                    ),
+                    HTML(HTML_ADD_SUBCATEGORY_BUTTON),
+                    css_class="flex gap-x-6 gap-y-2 items-center",
                 ),
                 "bank_account",
                 Submit(
@@ -104,6 +118,29 @@ class CategoryForm(forms.ModelForm):
         self.fields["name"].label = "Categoria"
         self.helper.layout = Layout(
             Field("name", css_class="bg-gray-50"),
+            Submit(
+                "submit",
+                "Aggiungi",
+                css_class="w-full mt-3",
+            ),
+        )
+
+
+class SubcategoryForm(forms.ModelForm):
+    class Meta:
+        model = Subcategory
+        fields = ["name", "category"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.label_class = "block text-base-content text-sm font-bold mb-2"
+        self.fields["name"].label = "Sottocategoria"
+        self.fields["category"].label = "Categoria"
+        self.helper.layout = Layout(
+            Field("name", css_class="bg-gray-50"),
+            Field("category", css_class="bg-gray-50"),
             Submit(
                 "submit",
                 "Aggiungi",
