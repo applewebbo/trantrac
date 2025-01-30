@@ -5,9 +5,9 @@ from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
 
-from trantrac.forms import CategoryForm, CsvUploadForm, TransactionForm, SubcategoryForm
-from trantrac.utils import import_csv_to_sheet, save_to_sheet
-from trantrac.models import Subcategory
+from trantrac.forms import CategoryForm, CsvUploadForm, SubcategoryForm, TransactionForm
+from trantrac.models import Category, Subcategory
+from trantrac.utils import import_csv_to_sheet, save_to_sheet, get_sheet_data
 
 
 @login_required
@@ -103,11 +103,6 @@ def upload_csv(request):
     return TemplateResponse(request, "trantrac/upload_csv.html", {"form": form})
 
 
-@login_required
-def refresh_categories(request):
-    pass
-
-
 def load_subcategories(request):
     category_id = request.GET.get("category")
     if category_id:
@@ -119,3 +114,34 @@ def load_subcategories(request):
     return TemplateResponse(
         request, "trantrac/subcategory_choices.html", {"subcategories": subcategories}
     )
+
+
+@login_required
+def refresh_categories(request):
+    sheet_data = get_sheet_data("CATEGORIE", "A2:B")
+    if sheet_data:
+        for row in sheet_data:
+            category_name = row[0] if row else None
+            subcategory_name = row[1] if len(row) > 1 else None
+
+            if category_name:
+                # Get or create category
+                category, _ = Category.objects.get_or_create(name=category_name)
+
+                # Create subcategory if it exists
+                if subcategory_name:
+                    Subcategory.objects.get_or_create(
+                        name=subcategory_name,
+                        category=category,
+                        defaults={"skip_sheet_save": True},
+                    )
+
+        messages.add_message(
+            request, messages.SUCCESS, "Categorie aggiornate con successo"
+        )
+    else:
+        messages.add_message(
+            request, messages.ERROR, "Impossibile recuperare i dati dal foglio"
+        )
+
+    return redirect("index")

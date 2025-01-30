@@ -9,15 +9,14 @@
     </a>
     {% if user.is_authenticated %}
       <div class="flex gap-x-1 items-center sm:gap-x-2">
-        <a href="{% url 'upload_csv' %}" class="btn btn-sm btn-primary btn-outline">
-          {% heroicon_micro 'arrow-path' class='size-5' %}
-        </a>
-        <a href="{% url 'upload_csv' %}" class="btn btn-sm btn-primary btn-outline">
-          {% heroicon_micro 'document-arrow-up' class='size-5' %}
-        </a>
+        <a href="{% url 'refresh_categories' %}"
+           class="btn btn-sm btn-primary btn-outline">{% heroicon_micro 'arrow-path' class='size-5' %}</a>
+        <a href="{% url 'upload_csv' %}"
+           class="btn btn-sm btn-primary btn-outline">{% heroicon_micro 'document-arrow-up' class='size-5' %}</a>
         <form action="{% url 'account_logout' %}" method="post">
           {% csrf_token %}
-          <button type="submit" class="flex items-center btn btn-primary btn-sm btn-outline">
+          <button type="submit"
+                  class="flex items-center btn btn-primary btn-sm btn-outline">
             {% heroicon_micro 'arrow-right-start-on-rectangle' class='block sm:hidden size-5' %}
             <span class="hidden sm:inline-block">Esci</span>
           </button>

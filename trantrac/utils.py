@@ -103,5 +103,24 @@ def import_csv_to_sheet(csv_file, user):
     return success, message
 
 
-def refresh_category():
-    pass
+def get_sheet_data(sheet_name, range_name):
+    """Get data from specified sheet and range"""
+    credentials = service_account.Credentials.from_service_account_info(
+        settings.GOOGLE_SHEETS_CREDENTIALS, scopes=settings.SCOPES
+    )
+    service = build("sheets", "v4", credentials=credentials)
+    sheet = service.spreadsheets()
+
+    try:
+        result = (
+            sheet.values()
+            .get(
+                spreadsheetId=settings.GOOGLE_SHEETS_SPREADSHEET_ID,
+                range=f"{sheet_name}!{range_name}",
+            )
+            .execute()
+        )
+
+        return result.get("values", [])
+    except Exception:
+        return None

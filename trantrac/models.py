@@ -44,6 +44,7 @@ class Category(models.Model):
 class Subcategory(models.Model):
     name = models.CharField(max_length=100)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    skip_sheet_save = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "sottocategoria"
@@ -53,8 +54,10 @@ class Subcategory(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        values = [[self.category.name, self.name]]
-        save_category_and_sub_to_sheet(values)
+        if not self.skip_sheet_save:
+            values = [[self.category.name, self.name]]
+            save_category_and_sub_to_sheet(values)
+            pass
         super().save(*args, **kwargs)
 
 
