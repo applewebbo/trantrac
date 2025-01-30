@@ -3,8 +3,9 @@ from datetime import datetime, timezone
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Div, Field, Layout, Submit
 from django import forms
+from django.urls import reverse_lazy
 
-from trantrac.models import Account, Category
+from trantrac.models import Account, Category, Subcategory
 
 HTML_ADD_BUTTON = """
     <a href="{% url 'add_category' %}" class='btn btn-sm btn-primary'>{% heroicon_mini 'plus' %}</a>
@@ -30,6 +31,10 @@ class TransactionForm(forms.Form):
     category = forms.ModelChoiceField(
         queryset=Category.objects.all().order_by("name"), label="Categoria"
     )
+    subcategory = forms.ModelChoiceField(
+        queryset=Subcategory.objects.none(),
+        label="Sottocategoria",
+    )
     bank_account = forms.ModelChoiceField(queryset=Account.objects.all(), label="Conto")
 
     def __init__(self, *args, **kwargs):
@@ -40,21 +45,48 @@ class TransactionForm(forms.Form):
         self.fields["date"].initial = datetime.now(timezone.utc)
         self.fields["bank_account"].initial = Account.objects.first()
         self.fields["category"].empty_label = "Seleziona categoria"
+        self.fields["subcategory"].empty_label = "Seleziona sottocategoria"
+        # If category is selected, filter subcategories
+        if "category" in self.data:
+            try:
+                category_id = int(self.data.get("category"))
+                self.fields["subcategory"].queryset = Subcategory.objects.filter(
+                    category_id=category_id
+                ).order_by("name")
+            except (ValueError, TypeError):
+                pass
         self.helper.field_class = "grow mb-3"
         self.helper.layout = Layout(
-            Field("amount", css_class="bg-gray-50"),
-            Field("date", css_class="bg-gray-50"),
-            Field("description", css_class="bg-gray-50"),
             Div(
-                "category",
-                HTML(HTML_ADD_BUTTON),
-                css_class="flex gap-x-6 gap-y-2 items-center",
-            ),
-            "bank_account",
-            Submit(
-                "submit",
-                "Salva",
-                css_class="w-full mt-3",
+                Field("amount", css_class="bg-gray-50"),
+                Field("date", css_class="bg-gray-50"),
+                Field("description", css_class="bg-gray-50"),
+                Div(
+                    Field(
+                        "category",
+                        **{
+                            "@change": "hasCategory = $event.target.value !== ''",
+                        },
+                    ),
+                    HTML(HTML_ADD_BUTTON),
+                    css_class="flex gap-x-6 gap-y-2 items-center",
+                    hx_get=reverse_lazy("load_subcategories"),
+                    hx_trigger="change",
+                    hx_target="#id_subcategory",
+                    hx_include="[name='category']",
+                ),
+                Field(
+                    "subcategory",
+                    css_class="bg-gray-50",
+                    **{"x-bind:disabled": "!hasCategory"},
+                ),
+                "bank_account",
+                Submit(
+                    "submit",
+                    "Salva",
+                    css_class="w-full mt-3",
+                ),
+                x_data="{ hasCategory: false }",
             ),
         )
 

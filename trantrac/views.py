@@ -7,6 +7,7 @@ from django.urls import reverse
 
 from trantrac.forms import CategoryForm, CsvUploadForm, TransactionForm
 from trantrac.utils import import_csv_to_sheet, save_to_sheet
+from trantrac.models import Subcategory
 
 
 @login_required
@@ -80,3 +81,16 @@ def upload_csv(request):
 @login_required
 def refresh_categories(request):
     pass
+
+
+def load_subcategories(request):
+    category_id = request.GET.get("category")
+    if category_id:
+        subcategories = Subcategory.objects.filter(category_id=category_id).order_by(
+            "name"
+        )
+    else:
+        subcategories = Subcategory.objects.none()
+    return TemplateResponse(
+        request, "trantrac/subcategory_choices.html", {"subcategories": subcategories}
+    )
