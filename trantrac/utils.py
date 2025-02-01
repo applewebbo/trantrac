@@ -5,6 +5,8 @@ from django.conf import settings
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
+from trantrac.models import Category, Subcategory, save_category_and_sub_to_sheet
+
 
 def save_to_sheet(values):
     credentials = service_account.Credentials.from_service_account_info(
@@ -49,58 +51,104 @@ def import_csv_to_sheet(csv_file, user):
     csv_reader = csv.DictReader(file)
 
     # Validate columns
-    file_columns = set(csv_reader.fieldnames)
-    missing_columns = REQUIRED_COLUMNS - file_columns
-    if missing_columns:
-        message = f"Il file CSV non contiene le seguenti colonne: {', '.join(missing_columns)}"
-        return False, message
+    if missing_columns := REQUIRED_COLUMNS - set(csv_reader.fieldnames):
+        return (
+            False,
+            f"Il file CSV non contiene le seguenti colonne: {', '.join(missing_columns)}",
+        )
 
-    # Convert to list and filter out empty rows and saldo row
-    rows = list(csv_reader)
-    rows = [
-        row
-        for row in rows
-        if any(row.values()) and not any("Saldo" in value for value in row.values())
-    ]
+    # Process all rows in one pass
+    categories_subcategories = set()
+    values = []
 
-    # Validate 'Importo' values
-    for index, row in enumerate(rows, start=1):
+    for row in csv_reader:
+        # Skip empty rows and saldo rows
+        if not any(row.values()) or any("Saldo" in value for value in row.values()):
+            continue
+
+        # Clean and validate importo
         importo = (
             row["Importo"].replace("+", "").replace(".", "").replace(",", "").strip()
         )
         try:
-            float(importo)
+            importo_float = float(importo)
+            if importo_float < 0:
+                categories_subcategories.add((row["Categoria"], row["Sottocategoria"]))
         except ValueError:
-            message = "Il file CSV contiene valori non numerici nella colonna Importo."
-            return False, message
+            return (
+                False,
+                "Il file CSV contiene valori non numerici nella colonna Importo.",
+            )
 
-    values = [
-        [
-            str(user.display_name),
-            row["Data operazione"],
-            row["Importo"].replace("+", "").replace(".", ""),
-            (
+        # Prepare row for Google Sheet
+        values.append(
+            [
+                str(user.display_name),
+                row["Data operazione"],
+                importo,
                 (row["Descrizione"][:37] + "...")
                 if len(row["Descrizione"]) > 50
-                else row["Descrizione"]
-            ),
-            row["Categoria"],
-            row["Sottocategoria"],
-            "Comune",
-            row["Codice identificativo"],
-        ]
-        for row in rows
-    ]
+                else row["Descrizione"],
+                row["Categoria"],
+                row["Sottocategoria"],
+                "Comune",
+                row["Codice identificativo"],
+            ]
+        )
 
-    # Save to Google Sheet
+    # Bulk create categories
+    existing_categories = {
+        cat.name: cat
+        for cat in Category.objects.filter(
+            name__in=[cat_name for cat_name, _ in categories_subcategories]
+        )
+    }
+
+    new_categories = []
+    for cat_name, _ in categories_subcategories:
+        if cat_name not in existing_categories:
+            new_cat = Category(name=cat_name)
+            new_categories.append(new_cat)
+            existing_categories[cat_name] = new_cat
+
+    Category.objects.bulk_create(new_categories)
+
+    # Handle subcategories and their sheet saving
+    existing_subcategories = {
+        (sub.name, sub.category.name): sub
+        for sub in Subcategory.objects.filter(
+            category__in=existing_categories.values()
+        ).select_related("category")
+    }
+
+    # Prepare subcategories data for Google Sheet
+    subcategories_sheet_values = []
+
+    for cat_name, subcat_name in categories_subcategories:
+        if not subcat_name:
+            continue
+
+        if (subcat_name, cat_name) not in existing_subcategories:
+            # Create new subcategory
+            subcategory = Subcategory(
+                name=subcat_name,
+                category=existing_categories[cat_name],
+                skip_sheet_save=True,  # Skip individual save method
+            )
+            subcategory.save()
+            # Add to sheet values
+            subcategories_sheet_values.append([cat_name, subcat_name])
+
+    # Batch save new subcategories to sheet
+    if subcategories_sheet_values:
+        save_category_and_sub_to_sheet(subcategories_sheet_values)
+
+    # Save transactions to Google Sheet
     success = save_to_sheet(values)
-
-    if success:
-        message = "File importato con successo"
-    else:
-        message = "Ops, qualcosa è andato storto.."
-
-    return success, message
+    return (
+        success,
+        "File importato con successo" if success else "Ops, qualcosa è andato storto..",
+    )
 
 
 def get_sheet_data(sheet_name, range_name):

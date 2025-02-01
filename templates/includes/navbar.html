@@ -10,6 +10,8 @@
     {% if user.is_authenticated %}
       <div class="flex gap-x-1 items-center sm:gap-x-2">
         <a href="{% url 'refresh_categories' %}"
+           hx-get="{% url 'refresh_categories' %}"
+           hx-indicator="#spinner"
            class="btn btn-sm btn-primary btn-outline">{% heroicon_micro 'arrow-path' class='size-5' %}</a>
         <a href="{% url 'upload_csv' %}"
            class="btn btn-sm btn-primary btn-outline">{% heroicon_micro 'document-arrow-up' class='size-5' %}</a>

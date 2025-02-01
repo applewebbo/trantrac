@@ -144,4 +144,4 @@ def refresh_categories(request):
             request, messages.ERROR, "Impossibile recuperare i dati dal foglio"
         )
 
-    return redirect("index")
+    return HttpResponse(status=204, headers={"HX-Redirect": reverse("index")})
