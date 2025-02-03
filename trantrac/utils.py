@@ -1,4 +1,5 @@
 import csv
+from functools import lru_cache
 from io import TextIOWrapper
 
 from django.conf import settings
@@ -8,34 +9,39 @@ from googleapiclient.discovery import build
 from trantrac.models import Category, Subcategory, save_category_and_sub_to_sheet
 
 
-def save_to_sheet(values):
+@lru_cache(maxsize=1)
+def get_sheets_service():
+    """ " Get a service object for interacting with the Sheets API"""
     credentials = service_account.Credentials.from_service_account_info(
         settings.GOOGLE_SHEETS_CREDENTIALS, scopes=settings.SCOPES
     )
-    service = build("sheets", "v4", credentials=credentials)
+    return build("sheets", "v4", credentials=credentials)
 
-    try:
-        body = {"values": values}
-        result = (
-            service.spreadsheets()
-            .values()
-            .append(
-                spreadsheetId=settings.GOOGLE_SHEETS_SPREADSHEET_ID,
-                range="TRANSAZIONI!A:C",
-                valueInputOption="USER_ENTERED",
-                insertDataOption="INSERT_ROWS",
-                body=body,
-            )
-            .execute()
+
+def save_to_sheet(values):
+    """Save data to Google Sheets"""
+    service = get_sheets_service()
+
+    body = {"values": values}
+    result = (
+        service.spreadsheets()
+        .values()
+        .append(
+            spreadsheetId=settings.GOOGLE_SHEETS_SPREADSHEET_ID,
+            range="TRANSAZIONI!A:C",
+            valueInputOption="USER_ENTERED",
+            insertDataOption="INSERT_ROWS",
+            body=body,
         )
+        .execute()
+    )
 
-        expected_rows = len(values)
-        return result.get("updates").get("updatedRows") == expected_rows
-    finally:
-        service.close()
+    expected_rows = len(values)
+    return result.get("updates").get("updatedRows") == expected_rows
 
 
 def import_csv_to_sheet(csv_file, user):
+    """Import CSV file to Google Sheets"""
     # Required columns for the CSV
     REQUIRED_COLUMNS = {
         "Data operazione",
@@ -67,11 +73,10 @@ def import_csv_to_sheet(csv_file, user):
             continue
 
         # Clean and validate importo
-        importo = (
-            row["Importo"].replace("+", "").replace(".", "").replace(",", "").strip()
-        )
+        importo = row["Importo"].replace("+", "").strip()
         try:
-            importo_float = float(importo)
+            # Convert European format (1.234,56) to float
+            importo_float = float(importo.replace(".", "").replace(",", "."))
             if importo_float < 0:
                 categories_subcategories.add((row["Categoria"], row["Sottocategoria"]))
         except ValueError:
@@ -86,9 +91,11 @@ def import_csv_to_sheet(csv_file, user):
                 str(user.display_name),
                 row["Data operazione"],
                 importo,
-                (row["Descrizione"][:37] + "...")
-                if len(row["Descrizione"]) > 50
-                else row["Descrizione"],
+                (
+                    (row["Descrizione"][:37] + "...")
+                    if len(row["Descrizione"]) > 50
+                    else row["Descrizione"]
+                ),
                 row["Categoria"],
                 row["Sottocategoria"],
                 "Comune",
@@ -153,10 +160,7 @@ def import_csv_to_sheet(csv_file, user):
 
 def get_sheet_data(sheet_name, range_name):
     """Get data from specified sheet and range"""
-    credentials = service_account.Credentials.from_service_account_info(
-        settings.GOOGLE_SHEETS_CREDENTIALS, scopes=settings.SCOPES
-    )
-    service = build("sheets", "v4", credentials=credentials)
+    service = get_sheets_service()
     sheet = service.spreadsheets()
 
     try:
