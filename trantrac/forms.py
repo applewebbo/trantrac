@@ -1,22 +1,31 @@
 from datetime import datetime, timezone
 
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import HTML, Div, Field, Layout, Submit
+from crispy_forms.layout import HTML, Button, Div, Field, Layout, Submit
 from django import forms
 from django.urls import reverse_lazy
 
 from trantrac.models import Account, Category, Subcategory
 
 HTML_ADD_BUTTON = """
-    <a href="{% url 'add_category' %}" class='btn btn-sm btn-primary'>{% heroicon_mini 'plus' %}</a>
+    <button hx-get="{% url 'add_category' %}"
+            hx-target="#modal-content"
+            hx-swap="innerHTML"
+            onclick="window.modal.showModal()"
+            class='btn btn-sm btn-primary'>
+        {% heroicon_mini 'plus' %}
+    </button>
     """
 HTML_ADD_SUBCATEGORY_BUTTON = """
-    <a href="{% url 'add_subcategory' %}?category="
-       class='btn btn-sm btn-primary'
-       x-bind:class="{ 'btn-disabled': !hasCategory }"
-       @click.prevent="window.location.href = '{% url 'add_subcategory' %}?category=' + $refs.categorySelect.value">
+    <button class='btn btn-sm btn-primary'
+            x-bind:class="{ 'btn-disabled': !hasCategory }"
+            hx-get="{% url 'add_subcategory' %}"
+            hx-target="#modal-content"
+            hx-swap="innerHTML"
+            @click="$el.setAttribute('hx-vals', JSON.stringify({category: $refs.categorySelect.value}))"
+            onclick="window.modal.showModal()">
         {% heroicon_mini 'plus' %}
-    </a>
+    </button>
 """
 
 
@@ -73,6 +82,7 @@ class TransactionForm(forms.Form):
                     Field(
                         "category",
                         x_ref="categorySelect",
+                        id="id_category",
                         autocomplete="off",
                         **{
                             "@change": "hasCategory = $event.target.value !== ''",
@@ -81,9 +91,9 @@ class TransactionForm(forms.Form):
                     HTML(HTML_ADD_BUTTON),
                     css_class="flex gap-x-6 gap-y-2 items-center",
                     hx_get=reverse_lazy("load_subcategories"),
-                    hx_trigger="change",
+                    hx_trigger="change from:#id_category",
                     hx_target="#id_subcategory",
-                    hx_include="[name='category']",
+                    hx_vals='js:{"category": event.target.value}',
                 ),
                 Div(
                     Field(
@@ -118,10 +128,19 @@ class CategoryForm(forms.ModelForm):
         self.fields["name"].label = "Categoria"
         self.helper.layout = Layout(
             Field("name", css_class="bg-gray-50"),
-            Submit(
-                "submit",
-                "Aggiungi",
-                css_class="w-full mt-3",
+            Div(
+                Button(
+                    "cancel",
+                    "Annulla",
+                    css_class="btn-error btn-sm",
+                    onclick="window.modal.close()",
+                ),
+                Submit(
+                    "submit",
+                    "Aggiungi",
+                    css_class="btn-sm",
+                ),
+                css_class="mt-4 flex justify-end gap-x-2",
             ),
         )
 
@@ -139,12 +158,21 @@ class SubcategoryForm(forms.ModelForm):
         self.fields["name"].label = "Sottocategoria"
         self.fields["category"].label = "Categoria"
         self.helper.layout = Layout(
-            Field("name", css_class="bg-gray-50"),
             Field("category", css_class="bg-gray-50"),
-            Submit(
-                "submit",
-                "Aggiungi",
-                css_class="w-full mt-3",
+            Field("name", css_class="bg-gray-50"),
+            Div(
+                Button(
+                    "cancel",
+                    "Annulla",
+                    css_class="btn-error btn-sm",
+                    onclick="window.modal.close()",
+                ),
+                Submit(
+                    "submit",
+                    "Aggiungi",
+                    css_class="btn-sm",
+                ),
+                css_class="mt-4 flex justify-end gap-x-2",
             ),
         )
 
