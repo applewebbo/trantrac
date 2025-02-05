@@ -13,8 +13,12 @@
            hx-get="{% url 'refresh_categories' %}"
            hx-indicator="#spinner"
            class="btn btn-sm btn-ghost">{% heroicon_micro 'arrow-path' class='size-5' %}</a>
-        <a href="{% url 'upload_csv' %}"
-           class="btn btn-sm btn-ghost">{% heroicon_micro 'document-arrow-up' class='size-5' %}</a>
+        <button type="button"
+           hx-get="{% url 'upload_csv' %}"
+           hx-target="#modal-content"
+           hx-swap="innerHTML"
+           onclick="window.modal.showModal()"
+           class="btn btn-sm btn-ghost">{% heroicon_micro 'document-arrow-up' class='size-5' %}</button>
         <form action="{% url 'account_logout' %}" method="post">
           {% csrf_token %}
           <button type="submit" class="btn btn-primary btn-sm">
