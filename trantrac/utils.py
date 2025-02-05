@@ -19,8 +19,21 @@ def get_sheets_service():
 
 
 def save_to_sheet(values):
-    """Save data to Google Sheets"""
+    """Save data to Google Sheets, appending to the first empty row"""
     service = get_sheets_service()
+
+    # Get the current length of data in the sheet
+    result = (
+        service.spreadsheets()
+        .values()
+        .get(
+            spreadsheetId=settings.GOOGLE_SHEETS_SPREADSHEET_ID, range="TRANSAZIONI!A:C"
+        )
+        .execute()
+    )
+
+    current_rows = len(result.get("values", [])) if result.get("values") else 0
+    start_row = current_rows + 1
 
     body = {"values": values}
     result = (
@@ -28,7 +41,7 @@ def save_to_sheet(values):
         .values()
         .append(
             spreadsheetId=settings.GOOGLE_SHEETS_SPREADSHEET_ID,
-            range="TRANSAZIONI!A:C",
+            range=f"TRANSAZIONI!A{start_row}:C{start_row}",
             valueInputOption="USER_ENTERED",
             insertDataOption="INSERT_ROWS",
             body=body,

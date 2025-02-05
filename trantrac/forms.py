@@ -54,6 +54,14 @@ class TransactionForm(forms.Form):
     )
     bank_account = forms.ModelChoiceField(queryset=Account.objects.all(), label="Conto")
 
+    def clean_amount(self):
+        amount = self.cleaned_data["amount"]
+        if amount <= 0:
+            raise forms.ValidationError(
+                "Il valore inserito deve essere maggiore di zero"
+            )
+        return amount
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
