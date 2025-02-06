@@ -166,6 +166,8 @@ AUTHENTICATION_BACKENDS = (
     "allauth.account.auth_backends.AuthenticationBackend",
 )
 
+ACCOUNT_FORMS = {"login": "users.forms.CustomLoginForm"}
+
 
 SITE_ID = 1
 
