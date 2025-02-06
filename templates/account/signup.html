@@ -1,0 +1,20 @@
+{% extends "base-simplified.html" %}
+{% load crispy_forms_tags i18n static %}
+{% block page_title %}
+    {% translate "Signup" %}
+{% endblock page_title %}
+
+{% block content %}
+    <div class="my-6 mx-auto max-w-sm">
+        <h1 class="text-3xl font-medium tracking-tight leading-tight text-center md:text-2xl text-primary">
+            <span class="italic font-thin">Tran</span>Trac
+        </h1>
+        <h2 class="my-4 text-base font-medium tracking-tight text-center md:text-xl text-base-content">
+            {% translate "Sign Up" %}
+        </h2>
+        <div role="alert" class="alert alert-error">
+            {% heroicon_outline "exclamation-circle" class="size-7" %}
+            La registrazione di nuovi account è disabilitata.
+        </div>
+    </div>
+{% endblock content %}
