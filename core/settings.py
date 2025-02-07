@@ -220,5 +220,5 @@ ANYMAIL = {
     "MAILGUN_SENDER_DOMAIN": env("MAILGUN_SENDER_DOMAIN"),
 }
 
-if not DEBUG:
+if env("PRODUCTION"):  # pragma: no cover
     CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS").split(",")
