@@ -109,6 +109,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/20/73/3a24b32df7046c5106846c0cfb3309033e2ebe00b08dfbf64c883add253a/django_allauth-65.3.1.tar.gz", hash = "sha256:e02e951b71a2753a746459f2efa114c7c72bf2cef6887dbe8607a577c0350587", size = 1547530 }
 
 [[package]]
+name = "django-anymail"
+version = "12.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+    { name = "requests" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/91/cd/34eca54757511df252ae8b56f5b75f3d137cc51ba53c7c5c74b8d449fa0d/django_anymail-12.0.tar.gz", hash = "sha256:65789c1b0f42915aa0450a4f173f77572d4c552979b748ddd8125af41972ad30", size = 95175 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3d/09/83c613d8781d56af7b8736c7c968f8dc0487763b2680ae9d726a7313c9de/django_anymail-12.0-py3-none-any.whl", hash = "sha256:de8458d713d0f9776da9ed04dcd3a0161be23e9ecbcb49dcf149219700ecd274", size = 131312 },
+]
+
+[[package]]
 name = "django-browser-reload"
 version = "1.17.0"
 source = { registry = "https://pypi.org/simple" }
@@ -514,6 +528,7 @@ dependencies = [
     { name = "crispy-tailwind" },
     { name = "django" },
     { name = "django-allauth" },
+    { name = "django-anymail" },
     { name = "django-browser-reload" },
     { name = "django-crispy-forms" },
     { name = "django-environ" },
@@ -538,6 +553,7 @@ requires-dist = [
     { name = "crispy-tailwind", specifier = ">=1.0.3" },
     { name = "django", specifier = ">=5.1.5" },
     { name = "django-allauth", specifier = ">=65.3.1" },
+    { name = "django-anymail", extras = ["mailgun"], specifier = ">=12.0" },
     { name = "django-browser-reload", specifier = ">=1.17.0" },
     { name = "django-crispy-forms", specifier = ">=2.3" },
     { name = "django-environ", specifier = ">=0.12.0" },

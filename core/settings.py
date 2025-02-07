@@ -11,8 +11,9 @@ environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 env = environ.Env(
     # set casting, default value
-    DEBUG=(bool, False),
     ALLOWED_HOSTS=(list, []),
+    CSRF_TRUSTED_ORIGINS=(str, []),
+    DEBUG=(bool, False),
 )
 
 # Quick-start development settings - unsuitable for production
@@ -39,6 +40,7 @@ INSTALLED_APPS = [
     # Third-party apps
     "allauth",
     "allauth.account",
+    "anymail",
     "crispy_forms",
     "crispy_tailwind",
     "django_browser_reload",
@@ -204,5 +206,19 @@ GOOGLE_SHEETS_CREDENTIALS = {
 GOOGLE_SHEETS_SPREADSHEET_ID = env("GOOGLE_SHEETS_SPREADSHEET_ID")
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-# MAIL
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# # MAIL
+# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# DJANGO_ANYMAIL
+EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"
+DEFAULT_FROM_EMAIL = "info@mg.webbografico.com"
+ADMIN_EMAIL = env("ADMIN_EMAIL")
+
+ANYMAIL = {
+    "MAILGUN_API_KEY": env("MAILGUN_API_KEY"),
+    "MAILGUN_API_URL": env("MAILGUN_API_URL"),
+    "MAILGUN_SENDER_DOMAIN": env("MAILGUN_SENDER_DOMAIN"),
+}
+
+if not DEBUG:
+    CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS").split(",")
