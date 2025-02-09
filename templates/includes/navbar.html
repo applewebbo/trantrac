@@ -1,31 +1,83 @@
-<nav class="container mx-auto mb-2 max-w-screen-sm bg-base-100">
-  <div class="flex flex-wrap justify-between items-center py-2 px-0 mx-auto max-w-screen-sm sm:p-4">
-    <a href="{% url 'index' %}"
-       class="flex items-center space-x-1 sm:space-x-3 rtl:space-x-reverse grow">
-      {% heroicon_outline "banknotes" class="size-6 sm:size-7" %}
-      <div class="self-center text-xl font-semibold tracking-tight whitespace-nowrap sm:text-2xl">
-        <span class="italic font-light">Tran</span>Trac
-      </div>
-    </a>
-    {% if user.is_authenticated %}
+<div x-data="{ open: false }">
+  <nav class="container mx-auto mb-2 max-w-screen-md bg-base-100">
+    <div class="flex flex-wrap justify-between items-center py-2 px-0 mx-auto max-w-screen-sm sm:p-4">
+      <a href="{% url 'index' %}"
+         class="flex items-center space-x-1 sm:space-x-3 rtl:space-x-reverse grow">
+        {% heroicon_outline "banknotes" class="size-6 sm:size-7" %}
+        <div class="self-center text-xl font-semibold tracking-tight whitespace-nowrap sm:text-2xl">
+          <span class="italic font-light">Tran</span>Trac
+        </div>
+      </a>
       <div class="flex gap-x-1 items-center sm:gap-x-2">
-        <a href="{% url 'refresh_categories' %}"
-           hx-get="{% url 'refresh_categories' %}"
-           hx-indicator="#spinner"
-           class="btn btn-sm btn-ghost">{% heroicon_micro 'arrow-path' class='size-5' %}</a>
-        <button type="button"
-           hx-get="{% url 'upload_csv' %}"
-           hx-target="#modal-content"
-           hx-swap="innerHTML"
-           onclick="window.modal.showModal()"
-           class="btn btn-sm btn-ghost">{% heroicon_micro 'document-arrow-up' class='size-5' %}</button>
-        <form action="{% url 'account_logout' %}" method="post">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-primary btn-sm">
-            Esci
+        {% if user.is_authenticated %}
+          <div class="hidden gap-x-2 md:flex">
+            <a href="{% url 'refresh_categories' %}"
+               hx-get="{% url 'refresh_categories' %}"
+               hx-indicator="#spinner"
+               class="flex items-center btn btn-sm">
+              {% heroicon_micro 'arrow-path' class='size-5' %}
+              Sincronizza
+            </a>
+            <button type="button"
+                    hx-get="{% url 'upload_csv' %}"
+                    hx-target="#modal-content"
+                    hx-swap="innerHTML"
+                    onclick="window.modal.showModal()"
+                    class="flex items-center btn btn-sm">
+              {% heroicon_micro 'document-arrow-up' class='size-5' %}
+              Carica
+            </button>
+            <form action="{% url 'account_logout' %}" method="post">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary btn-sm">Esci</button>
+            </form>
+          </div>
+          <button type="button"
+                  class="md:hidden btn btn-sm btn-ghost"
+                  aria-controls="navbar-cta"
+                  aria-expanded="false"
+                  x-on:click="open = ! open">
+            <span class="sr-only">Open main menu</span>
+            {% heroicon_outline "bars-3" x_show="! open" %}
+            {% heroicon_outline "x-mark" x_show="open" %}
           </button>
-        </form>
+        {% endif %}
       </div>
-    {% endif %}
-  </div>
-</nav>
+    </div>
+    <div class="justify-between items-center w-full md:hidden"
+         x-cloak
+         x-show="open"
+         x-collapse.duration.500>
+      <ul class="flex flex-col gap-x-0 gap-y-4 py-4">
+        <li>
+          <a href="{% url 'refresh_categories' %}"
+             hx-get="{% url 'refresh_categories' %}"
+             hx-indicator="#spinner"
+             class="flex items-center w-full btn">
+            {% heroicon_micro 'arrow-path' class='size-5' %}
+            Sincronizza Categorie
+          </a>
+        </li>
+        <li>
+          <a hx-get="{% url 'upload_csv' %}"
+             hx-target="#modal-content"
+             hx-swap="innerHTML"
+             onclick="window.modal.showModal()"
+             class="flex items-center w-full btn">
+            {% heroicon_micro 'document-arrow-up' class='size-5' %}
+            Importa Transazioni
+          </a>
+        </li>
+        <li>
+          <form action="{% url 'account_logout' %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="flex items-center w-full btn btn-primary">
+              {% heroicon_micro 'arrow-right-start-on-rectangle' class='size-5' %}
+              Esci
+            </button>
+          </form>
+        </li>
+      </ul>
+    </div>
+  </nav>
+</div>

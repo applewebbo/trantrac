@@ -14,6 +14,7 @@ env = environ.Env(
     ALLOWED_HOSTS=(list, []),
     CSRF_TRUSTED_ORIGINS=(str, []),
     DEBUG=(bool, False),
+    PRODUCTION=(bool, False),
 )
 
 # Quick-start development settings - unsuitable for production
