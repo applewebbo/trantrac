@@ -13,7 +13,7 @@ from trantrac.utils import import_csv_to_sheet, save_to_sheet, get_sheet_data
 @login_required
 def index(request):
     if request.method == "POST":
-        form = TransactionForm(request.POST)
+        form = TransactionForm(request.POST, user=request.user)
         if form.is_valid():
             values = [
                 [
@@ -42,7 +42,7 @@ def index(request):
             return HttpResponse(status=204, headers={"HX-Refresh": "true"})
 
     else:
-        form = TransactionForm()
+        form = TransactionForm(user=request.user)
 
     context = {"form": form, "user": request.user}
     if request.htmx:

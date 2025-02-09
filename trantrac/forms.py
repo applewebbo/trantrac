@@ -63,12 +63,20 @@ class TransactionForm(forms.Form):
         return amount
 
     def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.form_tag = False
         self.helper.label_class = "block text-base-content text-sm font-bold mb-2"
         self.fields["date"].initial = datetime.now(timezone.utc)
-        self.fields["bank_account"].initial = Account.objects.first()
+        # Set initial bank account based on user's display name
+        if user and user.display_name:
+            matching_account = Account.objects.filter(name=user.display_name).first()
+            self.fields["bank_account"].initial = (
+                matching_account or Account.objects.first()
+            )
+        else:
+            self.fields["bank_account"].initial = Account.objects.first()
         self.fields["category"].empty_label = "Seleziona categoria"
         self.fields["subcategory"].empty_label = "Seleziona sottocategoria"
         # If category is selected, filter subcategories
