@@ -207,9 +207,18 @@ class CsvUploadForm(forms.Form):
             Field(
                 "csv_file", css_class="bg-gray-50 file-input file-input-primary w-full"
             ),
-            Submit(
-                "submit",
-                "Carica",
-                css_class="w-full mt-3",
+            Div(
+                Button(
+                    "cancel",
+                    "Annulla",
+                    css_class="btn-error btn-sm",
+                    onclick="window.modal.close()",
+                ),
+                Submit(
+                    "submit",
+                    "Aggiungi",
+                    css_class="btn-sm",
+                ),
+                css_class="mt-4 flex justify-end gap-x-2",
             ),
         )
