@@ -27,3 +27,6 @@ name = "trantrac"
 readme = "README.md"
 requires-python = ">=3.13"
 version = "0.1.0"
+
+[tool.uv]
+python-preference = "only-managed"
