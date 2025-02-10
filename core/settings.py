@@ -224,6 +224,4 @@ if env("PRODUCTION"):  # pragma: no cover
     CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS").split(",")
     MIDDLEWARE.insert(2, "whitenoise.middleware.WhiteNoiseMiddleware")
 
-
-# DJANGO_TAILWIND_CLI
-TAILWIND_CLI_VERSION = "3.4.17"
+TAILWIND_CLI_VERSION = "4.0.5"

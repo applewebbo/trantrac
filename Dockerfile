@@ -22,7 +22,7 @@ RUN curl -fsSL https://bun.sh/install | bash
 COPY . /app
 
 # Install DaisyUI using Bun in the project directory
-RUN ~/.bun/bin/bun add -D daisyui@latest
+RUN ~/.bun/bin/bun add -D daisyui@beta
 
 # activate virtual env
 ENV PATH=/app/.venv/bin:$PATH

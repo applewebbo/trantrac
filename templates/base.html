@@ -1,4 +1,4 @@
-{% load django_htmx static %}
+{% load django_htmx static tailwind_cli %}
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -13,7 +13,7 @@
             {% endblock page_title %}
         </title>
         <!-- TailwindCSS -->
-        <link rel="stylesheet" href="{% static 'css/tailwind.css' %}" />
+        {% tailwind_css %}
         <!-- CustomCSS -->
         <link rel="stylesheet" href="{% static 'css/custom.css' %}" />
     </head>

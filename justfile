@@ -8,7 +8,7 @@ bootstrap:
     uv venv
     source .venv/bin/activate
     uv sync
-    bun add -D daisyui@latest
+    bun add -D daisyui@beta
 
 # Run the local development server
 local:
