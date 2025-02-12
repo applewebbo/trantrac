@@ -102,10 +102,10 @@ def import_csv_to_sheet(csv_file, user):
         values.append(
             [
                 str(user.display_name),
-                row["Data operazione"],
+                str(row["Data operazione"]),
                 importo,
                 (
-                    (row["Descrizione"][:37] + "...")
+                    (row["Descrizione"][:47] + "...")
                     if len(row["Descrizione"]) > 50
                     else row["Descrizione"]
                 ),
