@@ -19,7 +19,7 @@ def index(request):
                 [
                     str(request.user.display_name),
                     form.cleaned_data["date"].strftime("%Y-%m-%d"),
-                    "-" + str(form.cleaned_data["amount"]).replace(".", ","),
+                    str(form.cleaned_data["amount"]).replace(".", ","),
                     str(form.cleaned_data["description"]),
                     str(form.cleaned_data["category"]),
                     str(form.cleaned_data["subcategory"]),

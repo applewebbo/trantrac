@@ -96,10 +96,10 @@ def import_csv_to_sheet(csv_file, user):
             # Determine user name based on description for positive transactions
             if "VIVIANA" in description:
                 display_name = "Viviana"
-            elif "ENRICO" in description:
+            elif "ENRICO" in description or "APPLE" in description:
                 display_name = "Enrico"
             else:
-                display_name = ""
+                display_name = "Altro"
 
             transaction_row = [
                 display_name,
@@ -114,7 +114,7 @@ def import_csv_to_sheet(csv_file, user):
             transaction_row = [
                 str(user.display_name),
                 str(row["Data operazione"]),
-                importo,
+                importo.replace("-", ""),
                 (description[:47] + "...") if len(description) > 50 else description,
                 row["Categoria"],
                 row["Sottocategoria"],
