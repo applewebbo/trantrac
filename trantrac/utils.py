@@ -18,7 +18,7 @@ def get_sheets_service():
     return build("sheets", "v4", credentials=credentials)
 
 
-def save_to_sheet(values):
+def save_to_sheet(values, sheet_name):
     """Save data to Google Sheets, appending to the first empty row"""
     service = get_sheets_service()
 
@@ -27,7 +27,8 @@ def save_to_sheet(values):
         service.spreadsheets()
         .values()
         .get(
-            spreadsheetId=settings.GOOGLE_SHEETS_SPREADSHEET_ID, range="TRANSAZIONI!A:C"
+            spreadsheetId=settings.GOOGLE_SHEETS_SPREADSHEET_ID,
+            range=f"{sheet_name}!A:C",
         )
         .execute()
     )
@@ -41,7 +42,7 @@ def save_to_sheet(values):
         .values()
         .append(
             spreadsheetId=settings.GOOGLE_SHEETS_SPREADSHEET_ID,
-            range=f"TRANSAZIONI!A{start_row}:C{start_row}",
+            range=f"{sheet_name}!A{start_row}:C{start_row}",
             valueInputOption="USER_ENTERED",
             insertDataOption="INSERT_ROWS",
             body=body,
@@ -54,8 +55,7 @@ def save_to_sheet(values):
 
 
 def import_csv_to_sheet(csv_file, user):
-    """Import CSV file to Google Sheets"""
-    # Required columns for the CSV
+    """Import CSV file to Google Sheets separating positive and negative transactions"""
     REQUIRED_COLUMNS = {
         "Data operazione",
         "Importo",
@@ -65,58 +65,66 @@ def import_csv_to_sheet(csv_file, user):
         "Codice identificativo",
     }
 
-    # Convert the uploaded file to text mode
     file = TextIOWrapper(csv_file.file, encoding="utf-8")
     csv_reader = csv.DictReader(file)
 
-    # Validate columns
     if missing_columns := REQUIRED_COLUMNS - set(csv_reader.fieldnames):
         return (
             False,
             f"Il file CSV non contiene le seguenti colonne: {', '.join(missing_columns)}",
         )
 
-    # Process all rows in one pass
     categories_subcategories = set()
-    values = []
+    positive_values = []
+    negative_values = []
 
     for row in csv_reader:
-        # Skip empty rows and saldo rows
         if not any(row.values()) or any("Saldo" in value for value in row.values()):
             continue
 
-        # Clean and validate importo
         importo = row["Importo"].replace("+", "").strip()
         try:
-            # Convert European format (1.234,56) to float
             importo_float = float(importo.replace(".", "").replace(",", "."))
-            if importo_float < 0:
-                categories_subcategories.add((row["Categoria"], row["Sottocategoria"]))
         except ValueError:
             return (
                 False,
                 "Il file CSV contiene valori non numerici nella colonna Importo.",
             )
 
-        # Prepare row for Google Sheet
-        values.append(
-            [
+        description = row["Descrizione"]
+        if importo_float >= 0:
+            # Determine user name based on description for positive transactions
+            if "VIVIANA" in description:
+                display_name = "Viviana"
+            elif "ENRICO" in description:
+                display_name = "Enrico"
+            else:
+                display_name = ""
+
+            transaction_row = [
+                display_name,
+                str(row["Data operazione"]),
+                importo,
+                (description[:47] + "...") if len(description) > 50 else description,
+                row["Categoria"],
+                row["Codice identificativo"],
+            ]
+            positive_values.append(transaction_row)
+        else:
+            transaction_row = [
                 str(user.display_name),
                 str(row["Data operazione"]),
                 importo,
-                (
-                    (row["Descrizione"][:47] + "...")
-                    if len(row["Descrizione"]) > 50
-                    else row["Descrizione"]
-                ),
+                (description[:47] + "...") if len(description) > 50 else description,
                 row["Categoria"],
                 row["Sottocategoria"],
                 "Comune",
                 row["Codice identificativo"],
             ]
-        )
+            negative_values.append(transaction_row)
+            categories_subcategories.add((row["Categoria"], row["Sottocategoria"]))
 
-    # Bulk create categories
+    # Bulk create categories for negative transactions only
     existing_categories = {
         cat.name: cat
         for cat in Category.objects.filter(
@@ -133,7 +141,7 @@ def import_csv_to_sheet(csv_file, user):
 
     Category.objects.bulk_create(new_categories)
 
-    # Handle subcategories and their sheet saving
+    # Handle subcategories for negative transactions only
     existing_subcategories = {
         (sub.name, sub.category.name): sub
         for sub in Subcategory.objects.filter(
@@ -141,7 +149,6 @@ def import_csv_to_sheet(csv_file, user):
         ).select_related("category")
     }
 
-    # Prepare subcategories data for Google Sheet
     subcategories_sheet_values = []
 
     for cat_name, subcat_name in categories_subcategories:
@@ -149,25 +156,26 @@ def import_csv_to_sheet(csv_file, user):
             continue
 
         if (subcat_name, cat_name) not in existing_subcategories:
-            # Create new subcategory
             subcategory = Subcategory(
                 name=subcat_name,
                 category=existing_categories[cat_name],
-                skip_sheet_save=True,  # Skip individual save method
+                skip_sheet_save=True,
             )
             subcategory.save()
-            # Add to sheet values
             subcategories_sheet_values.append([cat_name, subcat_name])
 
-    # Batch save new subcategories to sheet
     if subcategories_sheet_values:
         save_category_and_sub_to_sheet(subcategories_sheet_values)
 
-    # Save transactions to Google Sheet
-    success = save_to_sheet(values)
+    # Save transactions to respective sheets
+    success_positive = save_to_sheet(positive_values, "ENTRATE")
+    success_negative = save_to_sheet(negative_values, "USCITE")
+
     return (
-        success,
-        "File importato con successo" if success else "Ops, qualcosa è andato storto..",
+        success_positive and success_negative,
+        "File importato con successo"
+        if (success_positive and success_negative)
+        else "Ops, qualcosa è andato storto..",
     )
 
 
