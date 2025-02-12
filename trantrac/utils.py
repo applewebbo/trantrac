@@ -91,22 +91,36 @@ def import_csv_to_sheet(csv_file, user):
                 "Il file CSV contiene valori non numerici nella colonna Importo.",
             )
 
-        transaction_row = [
-            str(user.display_name),
-            str(row["Data operazione"]),
-            importo,
-            (row["Descrizione"][:47] + "...")
-            if len(row["Descrizione"]) > 50
-            else row["Descrizione"],
-            row["Categoria"],
-            row["Sottocategoria"],
-            "Comune",
-            row["Codice identificativo"],
-        ]
-
+        description = row["Descrizione"]
         if importo_float >= 0:
+            # Determine user name based on description for positive transactions
+            if "VIVIANA" in description:
+                display_name = "Viviana"
+            elif "ENRICO" in description:
+                display_name = "Enrico"
+            else:
+                display_name = ""
+
+            transaction_row = [
+                display_name,
+                str(row["Data operazione"]),
+                importo,
+                (description[:47] + "...") if len(description) > 50 else description,
+                row["Categoria"],
+                row["Codice identificativo"],
+            ]
             positive_values.append(transaction_row)
         else:
+            transaction_row = [
+                str(user.display_name),
+                str(row["Data operazione"]),
+                importo,
+                (description[:47] + "...") if len(description) > 50 else description,
+                row["Categoria"],
+                row["Sottocategoria"],
+                "Comune",
+                row["Codice identificativo"],
+            ]
             negative_values.append(transaction_row)
             categories_subcategories.add((row["Categoria"], row["Sottocategoria"]))
 
