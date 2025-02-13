@@ -16,6 +16,7 @@
         {% tailwind_css %}
         <!-- CustomCSS -->
         <link rel="stylesheet" href="{% static 'css/custom.css' %}" />
+        {% include 'includes/favico.html' %}
     </head>
     <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
         <div class="container mx-auto mt-2 mb-2 max-w-screen-lg md:mb-8">{% include 'includes/navbar.html' %}</div>
