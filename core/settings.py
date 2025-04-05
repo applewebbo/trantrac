@@ -222,4 +222,10 @@ if env("PRODUCTION"):  # pragma: no cover
     CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS").split(",")
     MIDDLEWARE.insert(2, "whitenoise.middleware.WhiteNoiseMiddleware")
 
-TAILWIND_CLI_VERSION = "4.1.2"
+# DaisyUI configuration (requires tailwind-cli-extra)
+TAILWIND_CLI_SRC_REPO = "dobicinaitis/tailwind-cli-extra"
+TAILWIND_CLI_VERSION = "2.6.2"  # Contains Tailwind CSS 4.1.17 + DaisyUI 5.5.3
+TAILWIND_CLI_ASSET_NAME = "tailwindcss-extra"
+TAILWIND_CLI_USE_DAISY_UI = True
+# Use custom source CSS with DaisyUI and plugins
+TAILWIND_CLI_SRC_CSS = "static/css/source.css"
