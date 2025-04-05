@@ -20,7 +20,8 @@ dependencies = [
   "django-tailwind-cli[django-extensions]>=2.21.1",
   "google-api-python-client>=2.159.0",
   "google-auth>=2.37.0",
-  "heroicons[django]>=2.10.0"
+  "heroicons[django]>=2.10.0",
+  "uvloop>=0.21.0"
 ]
 description = "Transaction to Google Sheets"
 name = "trantrac"
