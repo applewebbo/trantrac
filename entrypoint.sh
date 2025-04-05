@@ -18,4 +18,6 @@ exec granian "core.wsgi:application" \
     --interface wsgi \
     --no-ws \
     --loop uvloop \
-    --process-name "granian [core]"
+    --process-name "granian [core]" \
+    --workers 2 \
+    --backpressure 16
