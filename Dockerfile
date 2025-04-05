@@ -1,5 +1,5 @@
 # pull official base image
-FROM python:3.12-slim-bookworm
+FROM python:3.13-slim-bookworm
 
 # set work directory
 WORKDIR /app
@@ -21,8 +21,8 @@ RUN curl -fsSL https://bun.sh/install | bash
 # Copy project files
 COPY . /app
 
-# Install DaisyUI using Bun in the project directory
-RUN ~/.bun/bin/bun add -D daisyui@beta
+# # Install DaisyUI using Bun
+RUN ~/.bun/bin/bun install
 
 # activate virtual env
 ENV PATH=/app/.venv/bin:$PATH

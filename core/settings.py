@@ -174,10 +174,8 @@ ACCOUNT_FORMS = {"login": "users.forms.CustomLoginForm"}
 
 SITE_ID = 1
 
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*"]
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
-ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = False
 ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_UNIQUE_EMAIL = True
@@ -224,4 +222,4 @@ if env("PRODUCTION"):  # pragma: no cover
     CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS").split(",")
     MIDDLEWARE.insert(2, "whitenoise.middleware.WhiteNoiseMiddleware")
 
-TAILWIND_CLI_VERSION = "4.0.6"
+TAILWIND_CLI_VERSION = "4.1.2"
