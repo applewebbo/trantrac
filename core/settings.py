@@ -1,4 +1,5 @@
 import os
+import warnings
 from pathlib import Path
 
 import environ
@@ -229,3 +230,6 @@ TAILWIND_CLI_ASSET_NAME = "tailwindcss-extra"
 TAILWIND_CLI_USE_DAISY_UI = True
 # Use custom source CSS with DaisyUI and plugins
 TAILWIND_CLI_SRC_CSS = "static/css/source.css"
+
+# IGNORE TYPER DEPRECATION WARNING
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="typer.core")
