@@ -233,3 +233,5 @@ TAILWIND_CLI_SRC_CSS = "static/css/source.css"
 
 # IGNORE TYPER DEPRECATION WARNING
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="typer.core")
+# IGNORE HTTPLIB2 DEPRECATION WARNING (pyparsing compatibility)
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="httplib2.auth")

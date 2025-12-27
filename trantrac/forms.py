@@ -114,7 +114,7 @@ class TransactionForm(forms.Form):
                        id="bank_account_{account.id}" class="hidden"
                        x-model="selectedAccount" />
                 <label for="bank_account_{account.id}"
-                       class="btn btn-sm btn-secondary"
+                       class="btn btn-sm btn-accent"
                        :class="selectedAccount == {account.id} ? '' : 'btn-outline'"
                        @click="selectedAccount = {account.id}">
                     {account.name}
@@ -146,7 +146,7 @@ class TransactionForm(forms.Form):
                     Field(
                         "category",
                         x_ref="categorySelect",
-                        id="id_category",
+                        css_id="id_category",
                         autocomplete="off",
                         **{
                             "@change": "hasCategory = $event.target.value !== ''",
@@ -171,7 +171,7 @@ class TransactionForm(forms.Form):
                 HTML(account_buttons_html),
                 Submit(
                     "submit",
-                    "Salva",
+                    "Aggiungi",
                     css_class="w-full mt-3",
                 ),
                 x_data="{ hasCategory: false }",
