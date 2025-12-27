@@ -28,6 +28,83 @@ HTML_ADD_SUBCATEGORY_BUTTON = """
     </button>
 """
 
+HTML_QUICK_CATEGORIES_START = """
+<!-- Quick Categories Section -->
+<div class="mb-4 rounded-lg border-2 border-gray-100 dark:border-base-300  dark:bg-base-300 p-4"
+     x-data="{
+         activeTab: ({{ has_category_data|yesno:'true,false' }}) ? 'recent' : 'all',
+         selectCategory(categoryId, subcategoryId) {
+             const categorySelect = document.getElementById('id_category');
+             const subcategorySelect = document.getElementById('id_subcategory');
+
+             categorySelect.value = categoryId;
+             categorySelect.dispatchEvent(new Event('change'));
+
+             setTimeout(() => {
+                 subcategorySelect.value = subcategoryId;
+             }, 200);
+         }
+     }">
+    <!-- DaisyUI Tabs -->
+    <div role="tablist" class="tabs tabs-border">
+        <a role="tab"
+           class="tab"
+           :class="{ 'tab-active': activeTab === 'recent' }"
+           @click="activeTab = 'recent'">
+            Recenti
+        </a>
+        <a role="tab"
+           class="tab"
+           :class="{ 'tab-active': activeTab === 'most-used' }"
+           @click="activeTab = 'most-used'">
+            Più usate
+        </a>
+        <a role="tab"
+           class="tab"
+           :class="{ 'tab-active': activeTab === 'all' }"
+           @click="activeTab = 'all'">
+            Scegli la categoria
+        </a>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="mt-4">
+        <!-- Recent Categories -->
+        <div x-show="activeTab === 'recent'" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {% for item in recent_categories %}
+            <button type="button"
+                    class="btn btn-sm btn-accent"
+                    @click="selectCategory({{ item.category }}, {{ item.subcategory }})">
+                {{ item.subcategory__name }}
+            </button>
+            {% empty %}
+            <p class="col-span-full text-sm text-gray-500">Nessuna categoria recente</p>
+            {% endfor %}
+        </div>
+
+        <!-- Most Used Categories -->
+        <div x-show="activeTab === 'most-used'" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {% for item in most_used_categories %}
+            <button type="button"
+                    class="btn btn-sm btn-accent"
+                    @click="selectCategory({{ item.category }}, {{ item.subcategory }})">
+                {{ item.subcategory__name }}
+            </button>
+            {% empty %}
+            <p class="col-span-full text-sm text-gray-500">Nessuna categoria usata</p>
+            {% endfor %}
+        </div>
+
+        <!-- All Categories (Standard Form) -->
+        <div x-show="activeTab === 'all'">
+"""
+
+HTML_QUICK_CATEGORIES_END = """
+        </div>
+    </div>
+</div>
+"""
+
 
 class DateInput(forms.widgets.DateInput):
     input_type = "date"
@@ -142,6 +219,7 @@ class TransactionForm(forms.Form):
                     css_class="flex gap-x-3",
                 ),
                 Field("description", css_class="bg-gray-50"),
+                HTML(HTML_QUICK_CATEGORIES_START),
                 Div(
                     Field(
                         "category",
@@ -168,6 +246,7 @@ class TransactionForm(forms.Form):
                     HTML(HTML_ADD_SUBCATEGORY_BUTTON),
                     css_class="flex gap-x-6 gap-y-2 items-center",
                 ),
+                HTML(HTML_QUICK_CATEGORIES_END),
                 HTML(account_buttons_html),
                 Submit(
                     "submit",

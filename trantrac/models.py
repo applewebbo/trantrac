@@ -70,3 +70,22 @@ class Account(models.Model):
     class Meta:
         verbose_name = "conto bancario"
         verbose_name_plural = "conti bancari"
+
+
+class CategoryUsage(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    subcategory = models.ForeignKey(Subcategory, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "utilizzo categoria"
+        verbose_name_plural = "utilizzi categorie"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["-created_at"]),
+            models.Index(fields=["category", "subcategory"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user} - {self.category} - {self.subcategory}"
