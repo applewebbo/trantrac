@@ -89,10 +89,58 @@ class TransactionForm(forms.Form):
             except (ValueError, TypeError):
                 pass
         self.helper.field_class = "grow mb-3"
+
+        # Build radio buttons for bank accounts
+        accounts = Account.objects.all()
+        default_account_id = None
+        if user and user.display_name:
+            matching_account = Account.objects.filter(name=user.display_name).first()
+            default_account_id = (
+                matching_account.id if matching_account else Account.objects.first().id
+            )
+        else:
+            default_account_id = (
+                Account.objects.first().id if Account.objects.exists() else None
+            )
+
+        account_buttons_html = (
+            f'<div class="mb-3" x-data="{{ selectedAccount: {default_account_id} }}">'
+        )
+        account_buttons_html += '<label class="block text-base-content text-sm font-bold mb-2">Conto</label>'
+        account_buttons_html += '<div class="grid grid-cols-3 gap-2">'
+        for account in accounts:
+            account_buttons_html += f'''
+                <input type="radio" name="bank_account" value="{account.id}"
+                       id="bank_account_{account.id}" class="hidden"
+                       x-model="selectedAccount" />
+                <label for="bank_account_{account.id}"
+                       class="btn btn-sm btn-secondary"
+                       :class="selectedAccount == {account.id} ? '' : 'btn-outline'"
+                       @click="selectedAccount = {account.id}">
+                    {account.name}
+                </label>
+            '''
+        account_buttons_html += "</div></div>"
+
         self.helper.layout = Layout(
             Div(
-                Field("amount", css_class="bg-gray-50"),
-                Field("date", css_class="bg-gray-50"),
+                Div(
+                    Div(
+                        HTML(
+                            '<label class="block text-base-content text-sm font-bold mb-2">Importo</label>'
+                        ),
+                        HTML("""
+                            <label class="input input-bordered flex items-center gap-2 bg-gray-50">
+                                <input type="number" step="0.01" name="amount" id="id_amount"
+                                       class="grow" placeholder="0.00" required />
+                                {% heroicon_outline 'currency-euro' class='w-6 h-6' %}
+                            </label>
+                        """),
+                        css_class="grow mb-3",
+                    ),
+                    Field("date", css_class="bg-gray-50", wrapper_class="grow"),
+                    css_class="flex gap-x-3",
+                ),
                 Field("description", css_class="bg-gray-50"),
                 Div(
                     Field(
@@ -120,7 +168,7 @@ class TransactionForm(forms.Form):
                     HTML(HTML_ADD_SUBCATEGORY_BUTTON),
                     css_class="flex gap-x-6 gap-y-2 items-center",
                 ),
-                "bank_account",
+                HTML(account_buttons_html),
                 Submit(
                     "submit",
                     "Salva",

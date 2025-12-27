@@ -205,3 +205,4 @@ staticfiles/
 static/css/tailwind.css
 .django_tailwind_cli/
 .claude/plans/
+.playwright-mcp/
