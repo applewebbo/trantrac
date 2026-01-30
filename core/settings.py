@@ -81,6 +81,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "trantrac.context_processors.crispy_css_container",
             ],
             "builtins": [
                 "heroicons.templatetags.heroicons",

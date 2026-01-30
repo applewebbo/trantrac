@@ -207,18 +207,22 @@ class TransactionForm(forms.Form):
                             '<label class="block text-base-content text-sm font-bold mb-2">Importo</label>'
                         ),
                         HTML("""
-                            <label class="input input-bordered flex items-center gap-2 bg-gray-50">
+                            <label class="flex items-center gap-2 bg-base-200 dark:bg-base-300 border border-base-300 rounded-lg py-2 px-4">
                                 <input type="number" step="0.01" name="amount" id="id_amount"
-                                       class="grow" placeholder="0.00" required />
-                                {% heroicon_outline 'currency-euro' class='w-6 h-6' %}
+                                       class="grow bg-transparent focus:outline-none text-base-content" placeholder="0.00" required />
+                                {% heroicon_outline 'currency-euro' class='w-6 h-6 text-base-content' %}
                             </label>
                         """),
                         css_class="grow mb-3",
                     ),
-                    Field("date", css_class="bg-gray-50", wrapper_class="grow"),
+                    Field(
+                        "date",
+                        css_class="bg-base-200 dark:bg-base-300",
+                        wrapper_class="grow",
+                    ),
                     css_class="flex gap-x-3",
                 ),
-                Field("description", css_class="bg-gray-50"),
+                Field("description", css_class="bg-base-200 dark:bg-base-300"),
                 HTML(HTML_QUICK_CATEGORIES_START),
                 Div(
                     Field(
@@ -240,7 +244,7 @@ class TransactionForm(forms.Form):
                 Div(
                     Field(
                         "subcategory",
-                        css_class="bg-gray-50",
+                        css_class="bg-base-200 dark:bg-base-300",
                         **{"x-bind:disabled": "!hasCategory"},
                     ),
                     HTML(HTML_ADD_SUBCATEGORY_BUTTON),
@@ -270,7 +274,7 @@ class CategoryForm(forms.ModelForm):
         self.helper.label_class = "block text-base-content text-sm font-bold mb-2"
         self.fields["name"].label = "Categoria"
         self.helper.layout = Layout(
-            Field("name", css_class="bg-gray-50"),
+            Field("name", css_class="bg-base-200 dark:bg-base-300"),
             Div(
                 Button(
                     "cancel",
@@ -301,8 +305,8 @@ class SubcategoryForm(forms.ModelForm):
         self.fields["name"].label = "Sottocategoria"
         self.fields["category"].label = "Categoria"
         self.helper.layout = Layout(
-            Field("category", css_class="bg-gray-50"),
-            Field("name", css_class="bg-gray-50"),
+            Field("category", css_class="bg-base-200 dark:bg-base-300"),
+            Field("name", css_class="bg-base-200 dark:bg-base-300"),
             Div(
                 Button(
                     "cancel",
@@ -340,7 +344,8 @@ class CsvUploadForm(forms.Form):
         self.helper.help_text_inline = True
         self.helper.layout = Layout(
             Field(
-                "csv_file", css_class="bg-gray-50 file-input file-input-primary w-full"
+                "csv_file",
+                css_class="bg-base-200 dark:bg-base-300 file-input file-input-primary w-full",
             ),
             Div(
                 Button(
