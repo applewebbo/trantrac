@@ -159,7 +159,6 @@ MEDIA_URL = "/media/"
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "users.User"
 
@@ -198,7 +197,7 @@ GOOGLE_SHEETS_CREDENTIALS = {
     "client_email": env("GOOGLE_SHEETS_CLIENT_EMAIL"),
     "client_id": env("GOOGLE_SHEETS_CLIENT_ID"),
     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token",
+    "token_uri": "https://oauth2.googleapis.com/token",  # nosec B105
     "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
     "client_x509_cert_url": env("GOOGLE_SHEETS_CLIENT_X509_CERT_URL"),
 }
