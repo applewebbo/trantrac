@@ -13,12 +13,14 @@ from trantrac.utils import import_csv_to_sheet, save_to_sheet, get_sheet_data
 
 def get_recent_categories(limit=6):
     """Get last N used category+subcategory pairs (global)"""
+    from django.db.models import Max
+
     return (
         CategoryUsage.objects.values(
             "category", "subcategory", "subcategory__name", "category__name"
         )
-        .distinct()
-        .order_by("-created_at")[:limit]
+        .annotate(last_used=Max("created_at"))
+        .order_by("-last_used")[:limit]
     )
 
 
