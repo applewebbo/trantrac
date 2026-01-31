@@ -129,7 +129,11 @@ class TransactionForm(forms.Form):
         queryset=Subcategory.objects.none(),
         label="Sottocategoria",
     )
-    bank_account = forms.ModelChoiceField(queryset=Account.objects.all(), label="Conto")
+    bank_account = forms.ModelChoiceField(
+        queryset=Account.objects.all(),
+        label="Conto",
+        widget=forms.HiddenInput(),
+    )
 
     def clean_amount(self):
         amount = self.cleaned_data["amount"]
@@ -166,38 +170,6 @@ class TransactionForm(forms.Form):
             except (ValueError, TypeError):
                 pass
         self.helper.field_class = "grow mb-3"
-
-        # Build radio buttons for bank accounts
-        accounts = Account.objects.all()
-        default_account_id = None
-        if user and user.display_name:
-            matching_account = Account.objects.filter(name=user.display_name).first()
-            default_account_id = (
-                matching_account.id if matching_account else Account.objects.first().id
-            )
-        else:
-            default_account_id = (
-                Account.objects.first().id if Account.objects.exists() else None
-            )
-
-        account_buttons_html = (
-            f'<div class="mb-3" x-data="{{ selectedAccount: {default_account_id} }}">'
-        )
-        account_buttons_html += '<label class="block text-base-content text-sm font-bold mb-2">Conto</label>'
-        account_buttons_html += '<div class="grid grid-cols-3 gap-2">'
-        for account in accounts:
-            account_buttons_html += f'''
-                <input type="radio" name="bank_account" value="{account.id}"
-                       id="bank_account_{account.id}" class="hidden"
-                       x-model="selectedAccount" />
-                <label for="bank_account_{account.id}"
-                       class="btn btn-sm btn-accent"
-                       :class="selectedAccount == {account.id} ? '' : 'btn-outline'"
-                       @click="selectedAccount = {account.id}">
-                    {account.name}
-                </label>
-            '''
-        account_buttons_html += "</div></div>"
 
         self.helper.layout = Layout(
             Div(
@@ -251,7 +223,7 @@ class TransactionForm(forms.Form):
                     css_class="flex gap-x-6 gap-y-2 items-center",
                 ),
                 HTML(HTML_QUICK_CATEGORIES_END),
-                HTML(account_buttons_html),
+                Field("bank_account"),
                 Submit(
                     "submit",
                     "Aggiungi",
