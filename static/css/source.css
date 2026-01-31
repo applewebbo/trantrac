@@ -31,7 +31,7 @@
 @plugin"@tailwindcss/container-queries";
 @plugin"@tailwindcss/forms";
 @plugin "daisyui" {
-  themes: emerald --default, forest --prefersdark;
+  themes: emerald --default, business --prefersdark;
 }
 
 
