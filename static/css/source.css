@@ -31,10 +31,17 @@
 @plugin"@tailwindcss/container-queries";
 @plugin"@tailwindcss/forms";
 @plugin "daisyui" {
-  themes: emerald --default, dracula --prefersdark;
+  themes: emerald --default, forest --prefersdark;
 }
 
 
 html, body, label {
   font-family: 'Roboto', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --radius-field: 0.5rem;
+    --radius-box: 0.5rem;
+  }
 }

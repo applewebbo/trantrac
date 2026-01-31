@@ -142,7 +142,12 @@ def upload_csv(request):
             return HttpResponse(status=204, headers={"HX-Redirect": reverse("index")})
     else:
         form = CsvUploadForm()
-    return TemplateResponse(request, "trantrac/upload_csv.html", {"form": form})
+
+    context = {"form": form}
+    if request.htmx:
+        return TemplateResponse(request, "trantrac/upload_csv.html", context)
+    else:
+        return TemplateResponse(request, "trantrac/upload_csv_page.html", context)
 
 
 def load_subcategories(request):
