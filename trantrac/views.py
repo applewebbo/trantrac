@@ -1,13 +1,36 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
 
 from trantrac.forms import CategoryForm, CsvUploadForm, SubcategoryForm, TransactionForm
-from trantrac.models import Category, Subcategory
+from trantrac.models import Category, CategoryUsage, Subcategory
 from trantrac.utils import import_csv_to_sheet, save_to_sheet, get_sheet_data
+
+
+def get_recent_categories(limit=6):
+    """Get last N used category+subcategory pairs (global)"""
+    return (
+        CategoryUsage.objects.values(
+            "category", "subcategory", "subcategory__name", "category__name"
+        )
+        .distinct()
+        .order_by("-created_at")[:limit]
+    )
+
+
+def get_most_used_categories(limit=6):
+    """Get top N most used category+subcategory pairs (global)"""
+    return (
+        CategoryUsage.objects.values(
+            "category", "subcategory", "subcategory__name", "category__name"
+        )
+        .annotate(usage_count=Count("id"))
+        .order_by("-usage_count")[:limit]
+    )
 
 
 @login_required
@@ -28,6 +51,12 @@ def index(request):
             ]
 
             if save_to_sheet(values, "USCITE"):
+                # Track category usage
+                CategoryUsage.objects.create(
+                    user=request.user,
+                    category=form.cleaned_data["category"],
+                    subcategory=form.cleaned_data["subcategory"],
+                )
                 messages.add_message(
                     request,
                     messages.SUCCESS,
@@ -44,7 +73,17 @@ def index(request):
     else:
         form = TransactionForm(user=request.user)
 
-    context = {"form": form, "user": request.user}
+    recent_categories = get_recent_categories()
+    most_used_categories = get_most_used_categories()
+    has_category_data = bool(recent_categories or most_used_categories)
+
+    context = {
+        "form": form,
+        "user": request.user,
+        "recent_categories": recent_categories,
+        "most_used_categories": most_used_categories,
+        "has_category_data": has_category_data,
+    }
     if request.htmx:
         return TemplateResponse(request, "trantrac/transaction_form.html", context)
     else:

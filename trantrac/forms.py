@@ -28,6 +28,83 @@ HTML_ADD_SUBCATEGORY_BUTTON = """
     </button>
 """
 
+HTML_QUICK_CATEGORIES_START = """
+<!-- Quick Categories Section -->
+<div class="mb-4 rounded-lg border-2 border-gray-100 dark:border-base-300  dark:bg-base-300 p-4"
+     x-data="{
+         activeTab: ({{ has_category_data|yesno:'true,false' }}) ? 'recent' : 'all',
+         selectCategory(categoryId, subcategoryId) {
+             const categorySelect = document.getElementById('id_category');
+             const subcategorySelect = document.getElementById('id_subcategory');
+
+             categorySelect.value = categoryId;
+             categorySelect.dispatchEvent(new Event('change'));
+
+             setTimeout(() => {
+                 subcategorySelect.value = subcategoryId;
+             }, 200);
+         }
+     }">
+    <!-- DaisyUI Tabs -->
+    <div role="tablist" class="tabs tabs-border">
+        <a role="tab"
+           class="tab"
+           :class="{ 'tab-active': activeTab === 'recent' }"
+           @click="activeTab = 'recent'">
+            Recenti
+        </a>
+        <a role="tab"
+           class="tab"
+           :class="{ 'tab-active': activeTab === 'most-used' }"
+           @click="activeTab = 'most-used'">
+            Più usate
+        </a>
+        <a role="tab"
+           class="tab"
+           :class="{ 'tab-active': activeTab === 'all' }"
+           @click="activeTab = 'all'">
+            Scegli la categoria
+        </a>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="mt-4">
+        <!-- Recent Categories -->
+        <div x-show="activeTab === 'recent'" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {% for item in recent_categories %}
+            <button type="button"
+                    class="btn btn-sm btn-accent"
+                    @click="selectCategory({{ item.category }}, {{ item.subcategory }})">
+                {{ item.subcategory__name }}
+            </button>
+            {% empty %}
+            <p class="col-span-full text-sm text-gray-500">Nessuna categoria recente</p>
+            {% endfor %}
+        </div>
+
+        <!-- Most Used Categories -->
+        <div x-show="activeTab === 'most-used'" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {% for item in most_used_categories %}
+            <button type="button"
+                    class="btn btn-sm btn-accent"
+                    @click="selectCategory({{ item.category }}, {{ item.subcategory }})">
+                {{ item.subcategory__name }}
+            </button>
+            {% empty %}
+            <p class="col-span-full text-sm text-gray-500">Nessuna categoria usata</p>
+            {% endfor %}
+        </div>
+
+        <!-- All Categories (Standard Form) -->
+        <div x-show="activeTab === 'all'">
+"""
+
+HTML_QUICK_CATEGORIES_END = """
+        </div>
+    </div>
+</div>
+"""
+
 
 class DateInput(forms.widgets.DateInput):
     input_type = "date"
@@ -130,18 +207,23 @@ class TransactionForm(forms.Form):
                             '<label class="block text-base-content text-sm font-bold mb-2">Importo</label>'
                         ),
                         HTML("""
-                            <label class="input input-bordered flex items-center gap-2 bg-gray-50">
+                            <label class="flex items-center gap-2 bg-base-200 dark:bg-base-300 border border-base-300 rounded-lg py-2 px-4">
                                 <input type="number" step="0.01" name="amount" id="id_amount"
-                                       class="grow" placeholder="0.00" required />
-                                {% heroicon_outline 'currency-euro' class='w-6 h-6' %}
+                                       class="grow bg-transparent focus:outline-none text-base-content" placeholder="0.00" required />
+                                {% heroicon_outline 'currency-euro' class='w-6 h-6 text-base-content' %}
                             </label>
                         """),
                         css_class="grow mb-3",
                     ),
-                    Field("date", css_class="bg-gray-50", wrapper_class="grow"),
+                    Field(
+                        "date",
+                        css_class="bg-base-200 dark:bg-base-300",
+                        wrapper_class="grow",
+                    ),
                     css_class="flex gap-x-3",
                 ),
-                Field("description", css_class="bg-gray-50"),
+                Field("description", css_class="bg-base-200 dark:bg-base-300"),
+                HTML(HTML_QUICK_CATEGORIES_START),
                 Div(
                     Field(
                         "category",
@@ -162,12 +244,13 @@ class TransactionForm(forms.Form):
                 Div(
                     Field(
                         "subcategory",
-                        css_class="bg-gray-50",
+                        css_class="bg-base-200 dark:bg-base-300",
                         **{"x-bind:disabled": "!hasCategory"},
                     ),
                     HTML(HTML_ADD_SUBCATEGORY_BUTTON),
                     css_class="flex gap-x-6 gap-y-2 items-center",
                 ),
+                HTML(HTML_QUICK_CATEGORIES_END),
                 HTML(account_buttons_html),
                 Submit(
                     "submit",
@@ -191,7 +274,7 @@ class CategoryForm(forms.ModelForm):
         self.helper.label_class = "block text-base-content text-sm font-bold mb-2"
         self.fields["name"].label = "Categoria"
         self.helper.layout = Layout(
-            Field("name", css_class="bg-gray-50"),
+            Field("name", css_class="bg-base-200 dark:bg-base-300"),
             Div(
                 Button(
                     "cancel",
@@ -222,8 +305,8 @@ class SubcategoryForm(forms.ModelForm):
         self.fields["name"].label = "Sottocategoria"
         self.fields["category"].label = "Categoria"
         self.helper.layout = Layout(
-            Field("category", css_class="bg-gray-50"),
-            Field("name", css_class="bg-gray-50"),
+            Field("category", css_class="bg-base-200 dark:bg-base-300"),
+            Field("name", css_class="bg-base-200 dark:bg-base-300"),
             Div(
                 Button(
                     "cancel",
@@ -261,7 +344,8 @@ class CsvUploadForm(forms.Form):
         self.helper.help_text_inline = True
         self.helper.layout = Layout(
             Field(
-                "csv_file", css_class="bg-gray-50 file-input file-input-primary w-full"
+                "csv_file",
+                css_class="bg-base-200 dark:bg-base-300 file-input file-input-primary w-full",
             ),
             Div(
                 Button(
