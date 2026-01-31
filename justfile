@@ -20,8 +20,14 @@ requirements:
     uv sync
 
 # Update all packages
-update_all:
-    uv sync --upgrade
+@update_all: lock
+    uv sync --all-extras --upgrade
+    uvx --with pre-commit-uv prek auto-update
+
+@lock:
+    echo "Rebuilding lock file..."
+    uv lock --upgrade
+    echo "Done!"
 
 # Update a specific package
 update package:
@@ -45,7 +51,7 @@ lint:
     just _pre-commit run --all-files
 
 _pre-commit *args:
-    uvx --with pre-commit-uv pre-commit {{ args }}
+    uvx prek {{ args }}
 
 secure:
     uv-secure
