@@ -73,7 +73,7 @@ HTML_QUICK_CATEGORIES_START = """
         <div x-show="activeTab === 'recent'" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {% for item in recent_categories %}
             <button type="button"
-                    class="btn btn-sm btn-accent"
+                    class="btn btn-sm btn-primary"
                     @click="selectCategory({{ item.category }}, {{ item.subcategory }})">
                 {{ item.subcategory__name }}
             </button>
@@ -86,7 +86,7 @@ HTML_QUICK_CATEGORIES_START = """
         <div x-show="activeTab === 'most-used'" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {% for item in most_used_categories %}
             <button type="button"
-                    class="btn btn-sm btn-accent"
+                    class="btn btn-sm btn-primary"
                     @click="selectCategory({{ item.category }}, {{ item.subcategory }})">
                 {{ item.subcategory__name }}
             </button>
