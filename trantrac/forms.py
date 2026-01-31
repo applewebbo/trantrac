@@ -213,14 +213,14 @@ class TransactionForm(forms.Form):
                                 {% heroicon_outline 'currency-euro' class='w-6 h-6 text-base-content' %}
                             </label>
                         """),
-                        css_class="grow mb-3",
+                        css_class="grow",
                     ),
                     Field(
                         "date",
                         css_class="bg-base-200 dark:bg-base-300",
                         wrapper_class="grow",
                     ),
-                    css_class="flex gap-x-3",
+                    css_class="flex flex-col md:flex-row gap-3 mb-3",
                 ),
                 Field("description", css_class="bg-base-200 dark:bg-base-300"),
                 HTML(HTML_QUICK_CATEGORIES_START),
