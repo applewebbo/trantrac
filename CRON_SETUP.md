@@ -17,19 +17,32 @@ Il management command `send_monthly_reminder` invia una mail di reminder agli ut
 
 ## Test Manuale
 
-### Trovare il nome del container CapRover
+### Trovare il container CapRover
+
+CapRover usa Docker Swarm, quindi i container hanno nomi lunghi con suffissi. Verifica il container:
 
 ```bash
 docker ps | grep trantrac
 ```
 
-### Eseguire il command
-
-```bash
-docker exec srv-captain--trantrac uv run python manage.py send_monthly_reminder
+Output esempio:
+```
+052d81bc6bc3   img-captain-trantrac:14   "sh ./entrypoint.sh"   Up 4 minutes   srv-captain--trantrac.1.u7oy2z4r21cti1fek9r1qy8zl
 ```
 
-**Nota**: Il nome del container di solito è `srv-captain--<app-name>`. Sostituire con il nome effettivo.
+### Eseguire il command
+
+**Opzione A - Comando dinamico (consigliato)**:
+```bash
+docker exec $(docker ps -qf "name=srv-captain--trantrac") uv run python manage.py send_monthly_reminder
+```
+
+**Opzione B - Usa l'ID del container**:
+```bash
+docker exec 052d81bc6bc3 uv run python manage.py send_monthly_reminder
+```
+
+**Nota**: L'opzione A è consigliata perché funziona anche dopo i redeploy, quando l'ID e il suffisso del container cambiano.
 
 ## Opzione 1: Cron sul Server CapRover (Consigliato)
 
@@ -51,13 +64,15 @@ crontab -e
 
 **Ultimo giorno del mese alle 9:00**:
 ```cron
-0 9 28-31 * * [ $(date -d tomorrow +\%d) -eq 1 ] && docker exec srv-captain--trantrac uv run python manage.py send_monthly_reminder >> /var/log/trantrac_cron.log 2>&1
+0 9 28-31 * * [ $(date -d tomorrow +\%d) -eq 1 ] && docker exec $(docker ps -qf "name=srv-captain--trantrac") uv run python manage.py send_monthly_reminder >> /var/log/trantrac_cron.log 2>&1
 ```
 
 **Primo giorno del mese alle 9:00** (alternativa più semplice):
 ```cron
-0 9 1 * * docker exec srv-captain--trantrac uv run python manage.py send_monthly_reminder >> /var/log/trantrac_cron.log 2>&1
+0 9 1 * * docker exec $(docker ps -qf "name=srv-captain--trantrac") uv run python manage.py send_monthly_reminder >> /var/log/trantrac_cron.log 2>&1
 ```
+
+**Nota**: Il comando `$(docker ps -qf "name=srv-captain--trantrac")` trova automaticamente il container anche dopo i redeploy.
 
 ### 4. Verificare
 

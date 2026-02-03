@@ -37,13 +37,17 @@ update package:
 migrate:
     python manage.py migrate --settings=core.settings.development
 
-# Run tests
+# Run tests with coverage
 test:
-    COVERAGE_CORE=sysmon python -m pytest --reuse-db -s
+    uv run pytest tests/
 
-# Run fast tests
+# Run fast parallel tests
 ftest:
-    pytest -n 8 --reuse-db
+    uv run pytest tests/ -n 8 --reuse-db --no-cov
+
+# Run tests with coverage report
+test-cov:
+    uv run pytest tests/ --cov --cov-report=html --cov-report=term-missing
 
 lint:
     uv run ruff check --fix --unsafe-fixes .

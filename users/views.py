@@ -13,5 +13,5 @@ def user_delete(request):
             messages.SUCCESS,
             "Utente cancellato con successo",
         )
-        return redirect("school_menu:index")
+        return redirect("index")
     return render(request, "users/user_delete.html", context={"user": user})
