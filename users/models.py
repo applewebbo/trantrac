@@ -9,6 +9,17 @@ class User(AbstractUser):
     username = None
     email = models.EmailField(_("email address"), unique=True)
     display_name = models.CharField(max_length=50, blank=True)
+    telegram_chat_id = models.BigIntegerField(
+        null=True,
+        blank=True,
+        unique=True,
+        help_text="ID chat Telegram per bot",
+    )
+    phone_number = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="Numero di telefono per autenticazione Telegram",
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

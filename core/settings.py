@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     # Internal Apps
     "trantrac",
     "users",
+    "telegram_bot",
 ]
 
 MIDDLEWARE = [
@@ -204,6 +205,11 @@ GOOGLE_SHEETS_CREDENTIALS = {
 
 GOOGLE_SHEETS_SPREADSHEET_ID = env("GOOGLE_SHEETS_SPREADSHEET_ID")
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+
+# TELEGRAM BOT
+TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN", default="")
+TELEGRAM_WEBHOOK_URL = env("TELEGRAM_WEBHOOK_URL", default="")
+TELEGRAM_WEBHOOK_SECRET = env("TELEGRAM_WEBHOOK_SECRET", default="")
 
 # # MAIL
 # EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
