@@ -68,3 +68,38 @@ docker_build:
 
 docker_down:
     docker compose down -v
+
+# List issues (state: open|closed|all)
+[group: 'codeberg']
+issues state="open":
+    ./bin/codeberg list {{state}}
+
+# Show issue details
+[group: 'codeberg']
+issue number:
+    ./bin/codeberg show {{number}}
+
+# Add comment to issue
+[group: 'codeberg']
+issue-comment number text:
+    ./bin/codeberg comment {{number}} "{{text}}"
+
+# Close issue
+[group: 'codeberg']
+issue-close number:
+    ./bin/codeberg close {{number}}
+
+# Reopen issue
+[group: 'codeberg']
+issue-reopen number:
+    ./bin/codeberg reopen {{number}}
+
+# Add labels to issue (space-separated)
+[group: 'codeberg']
+issue-label number *labels:
+    ./bin/codeberg label {{number}} {{labels}}
+
+# Create new issue
+[group: 'codeberg']
+issue-create title body="":
+    ./bin/codeberg create "{{title}}" "{{body}}"
