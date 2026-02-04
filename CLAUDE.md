@@ -8,12 +8,13 @@ Family Finance Tracker that syncs transactions to Google Sheets. Built with Djan
 
 ## Tech Stack
 
-- **Backend**: Django 5.1 + Python 3.13+
+- **Backend**: Django 6.0.1 + Python 3.13+
 - **Frontend**: HTMX + Tailwind CSS 4.1.2 + DaisyUI (beta)
 - **Database**: SQLite with WAL mode enabled
 - **Server**: Granian (WSGI) with uvloop
 - **Package Management**: uv for Python
 - **Task Runner**: just (see justfile)
+- **Repository**: Codeberg (https://codeberg.org)
 
 ## Development Commands
 
@@ -57,6 +58,19 @@ just docker_up  # Start containers
 just docker_build  # Build and start
 just docker_down  # Stop and remove volumes
 ```
+
+### Issue Management (Codeberg)
+```bash
+just issues [state]  # List issues (state: open|closed|all, default: open)
+just issue <number>  # Show issue details
+just issue-create <title> [body]  # Create new issue
+just issue-comment <number> <text>  # Add comment to issue
+just issue-close <number>  # Close issue
+just issue-reopen <number>  # Reopen issue
+just issue-label <number> <labels>  # Add labels (space-separated)
+```
+
+**Note**: The project is hosted on Codeberg. Use the justfile commands above to manage issues instead of GitHub CLI.
 
 ## Architecture
 
