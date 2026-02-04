@@ -37,13 +37,17 @@ update package:
 migrate:
     python manage.py migrate --settings=core.settings.development
 
-# Run tests
+# Run tests with coverage
 test:
-    COVERAGE_CORE=sysmon python -m pytest --reuse-db -s
+    uv run pytest tests/
 
-# Run fast tests
+# Run fast parallel tests
 ftest:
-    pytest -n 8 --reuse-db
+    uv run pytest tests/ -n 8 --reuse-db --no-cov
+
+# Run tests with coverage report
+test-cov:
+    uv run pytest tests/ --cov --cov-report=html --cov-report=term-missing
 
 lint:
     uv run ruff check --fix --unsafe-fixes .
@@ -64,3 +68,38 @@ docker_build:
 
 docker_down:
     docker compose down -v
+
+# List issues (state: open|closed|all)
+[group: 'codeberg']
+issues state="open":
+    ./bin/codeberg list {{state}}
+
+# Show issue details
+[group: 'codeberg']
+issue number:
+    ./bin/codeberg show {{number}}
+
+# Add comment to issue
+[group: 'codeberg']
+issue-comment number text:
+    ./bin/codeberg comment {{number}} "{{text}}"
+
+# Close issue
+[group: 'codeberg']
+issue-close number:
+    ./bin/codeberg close {{number}}
+
+# Reopen issue
+[group: 'codeberg']
+issue-reopen number:
+    ./bin/codeberg reopen {{number}}
+
+# Add labels to issue (space-separated)
+[group: 'codeberg']
+issue-label number *labels:
+    ./bin/codeberg label {{number}} {{labels}}
+
+# Create new issue
+[group: 'codeberg']
+issue-create title body="":
+    ./bin/codeberg create "{{title}}" "{{body}}"

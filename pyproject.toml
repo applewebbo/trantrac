@@ -1,6 +1,12 @@
 [dependency-groups]
 dev = [
-  "ruff>=0.9.2"
+  "ruff>=0.9.2",
+  "pytest>=8.3.4",
+  "pytest-django>=4.9.0",
+  "pytest-xdist>=3.6.1",
+  "pytest-cov>=6.0.0",
+  "django-test-plus>=2.2.4",
+  "factory-boy>=3.3.3"
 ]
 prod = [
   "granian[pname]>=1.7.6",
@@ -28,6 +34,61 @@ name = "trantrac"
 readme = "README.md"
 requires-python = ">=3.13"
 version = "0.1.0"
+
+[tool.bandit]
+exclude_dirs = []
+skips = ["B101", "B106"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "def __str__",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+  "class .*\\bProtocol\\):",
+  "@(abc\\.)?abstractmethod"
+]
+precision = 2
+show_missing = true
+
+[tool.coverage.run]
+branch = true
+omit = [
+  "*/migrations/*",
+  "*/tests/*",
+  "*/__pycache__/*",
+  "*/venv/*",
+  "*/.venv/*",
+  "manage.py",
+  "*/asgi.py",
+  "*/wsgi.py",
+  "*/settings/*",
+  "users/views.py"
+]
+source = ["."]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "core.settings"
+addopts = [
+  "--reuse-db",
+  "--cov=.",
+  "--cov-report=html",
+  "--cov-report=term-missing",
+  "--cov-config=pyproject.toml",
+  "--strict-markers",
+  "--no-migrations"
+]
+markers = [
+  "slow: marks tests as slow",
+  "integration: marks tests as integration tests"
+]
+python_classes = ["Test*"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+testpaths = ["tests"]
 
 [tool.uv]
 python-preference = "only-managed"

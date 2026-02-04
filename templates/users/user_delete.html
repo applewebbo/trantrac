@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container p-4 mx-auto">
+    <h1 class="mb-4 text-2xl font-bold">Conferma eliminazione account</h1>
+    <p class="mb-4">Sei sicuro di voler eliminare il tuo account? Questa azione è irreversibile.</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-error">Elimina Account</button>
+        <a href="{% url 'index' %}" class="ml-2 btn btn-secondary">Annulla</a>
+    </form>
+</div>
+{% endblock content %}
