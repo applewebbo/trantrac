@@ -1,0 +1,20 @@
+when:
+  branch:
+  - main
+
+steps:
+- name: test
+  image: python:3.14-slim
+  commands:
+      # Install uv
+  - curl -LsSf https://astral.sh/uv/install.sh | sh
+  - export PATH="$HOME/.local/bin:$PATH"
+
+      # Install dependencies
+  - uv sync
+
+      # Run tests
+  - uv run pytest tests/ --cov --cov-report=term-missing
+  environment:
+    SECRET_KEY: test-secret-key-for-ci
+    DEBUG: true
