@@ -35,7 +35,7 @@ update package:
 
 # Run database migrations
 migrate:
-    python manage.py migrate --settings=core.settings.development
+    uv run python manage.py migrate
 
 # Run tests with coverage
 test:

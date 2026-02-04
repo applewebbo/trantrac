@@ -8,29 +8,29 @@
   - [ ] `/newbot` → nome: "TranTrac Bot"
   - [ ] Copia `TELEGRAM_BOT_TOKEN`
   - [ ] `/setcommands`: start, help
-- [ ] Aggiungi dependency: `uv add python-telegram-bot[webhook]`
-- [ ] Aggiungi variabili a `.env.example`
+- [x] Aggiungi dependency: `uv add python-telegram-bot[webhook]`
+- [x] Aggiungi variabili a `.env.example`
 
 ## Modifiche Database
 
-- [ ] Aggiungi campi a `users/models.py`:
-  - [ ] `telegram_chat_id` (BigIntegerField, unique)
-  - [ ] `phone_number` (CharField, max_length=20)
-- [ ] Crea app `telegram_bot/`
-- [ ] Crea modelli:
-  - [ ] `PendingTransaction`
-  - [ ] `TelegramAuthSession`
-  - [ ] `CategoryKeyword` (opzionale)
-- [ ] Run migrations: `python manage.py makemigrations` + `migrate`
+- [x] Aggiungi campi a `users/models.py`:
+  - [x] `telegram_chat_id` (BigIntegerField, unique)
+  - [x] `phone_number` (CharField, max_length=20)
+- [x] Crea app `telegram_bot/`
+- [x] Crea modelli:
+  - [x] `PendingTransaction`
+  - [x] `TelegramAuthSession`
+  - [x] `CategoryKeyword` (opzionale)
+- [x] Run migrations: `python manage.py makemigrations` + `migrate`
 
 ## Configurazione Django
 
-- [ ] Aggiungi `telegram_bot` a `INSTALLED_APPS` in `settings.py`
-- [ ] Aggiungi env vars in `settings.py`:
-  - [ ] `TELEGRAM_BOT_TOKEN`
-  - [ ] `TELEGRAM_WEBHOOK_URL`
-  - [ ] `TELEGRAM_WEBHOOK_SECRET`
-  - [ ] `SITE_URL`
+- [x] Aggiungi `telegram_bot` a `INSTALLED_APPS` in `settings.py`
+- [x] Aggiungi env vars in `settings.py`:
+  - [x] `TELEGRAM_BOT_TOKEN`
+  - [x] `TELEGRAM_WEBHOOK_URL`
+  - [x] `TELEGRAM_WEBHOOK_SECRET`
+  - [x] `SITE_URL` (già presente)
 - [ ] Include `telegram_bot.urls` in `core/urls.py`
 
 ## Implementazione Handlers
