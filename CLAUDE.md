@@ -139,3 +139,12 @@ No test files found in the codebase yet. When writing tests:
 - Use pytest with `--reuse-db` flag
 - Test files should be named `test_*.py`
 - Configure conftest.py for fixtures if needed
+
+## Git Commit Guidelines
+
+- Always run `just lint` BEFORE `git add` to avoid pre-commit hook conflicts
+- Use conventional commit format (feat:, fix:, docs:, etc.)
+- Reference the issue with "for #<number>" in the commit message
+- Write commit messages in English
+- **Never cite Claude or AI assistance in commit messages**
+- Keep commit messages concise but descriptive
