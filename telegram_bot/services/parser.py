@@ -38,6 +38,8 @@ def parse_transaction_message(message: str) -> dict | None:
         return None
 
     # Parse amount (handle both comma and dot as decimal separator)
+    # Remove currency symbols (€, $, etc.) and spaces
+    amount_str = amount_str.replace("€", "").replace("$", "").replace(" ", "")
     amount_str = amount_str.replace(",", ".")
 
     try:

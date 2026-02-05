@@ -48,14 +48,19 @@ class Command(BaseCommand):
             transaction.save()
 
             # Format values for Google Sheets
+            # Match format from transaction_service.py:
+            # Columns: Inserito da | Data | Importo | Descrizione | Categoria | Sottocategoria | Conto
             values = [
                 [
-                    transaction.date.strftime("%d/%m/%Y"),
-                    f"-{transaction.amount}",
-                    transaction.description,
-                    transaction.category.name,
-                    transaction.subcategory.name,
-                    transaction.account.name,
+                    str(
+                        transaction.user.display_name or transaction.user.email
+                    ),  # Inserito da
+                    transaction.date.strftime("%d/%m/%Y"),  # Data
+                    str(transaction.amount).replace(".", ","),  # Importo con virgola
+                    str(transaction.description),  # Descrizione
+                    str(transaction.category.name),  # Categoria
+                    str(transaction.subcategory.name),  # Sottocategoria
+                    str(transaction.account.name),  # Conto
                 ]
             ]
 

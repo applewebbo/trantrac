@@ -152,6 +152,18 @@ async def handle_subcategory_selection(
 
     logger.info(f"Pending transaction: {pending}")
 
+    # Handle navigation commands (n/p for next/previous page)
+    message_lower = message_text.lower()
+    if message_lower == "n":
+        current_page = context.user_data.get("current_page", 0)
+        await show_all_subcategories(update, context, user, page=current_page + 1)
+        return
+
+    if message_lower == "p":
+        current_page = context.user_data.get("current_page", 0)
+        await show_all_subcategories(update, context, user, page=current_page - 1)
+        return
+
     # Try to parse as number
     try:
         choice = int(message_text)
