@@ -1,5 +1,6 @@
 """Business logic for transaction management"""
 
+import logging
 from datetime import date
 from decimal import Decimal
 
@@ -8,6 +9,8 @@ from django.utils import timezone
 from telegram_bot.models import PendingTransaction
 from trantrac.models import Account, CategoryUsage, Subcategory
 from trantrac.utils import save_to_sheet
+
+logger = logging.getLogger(__name__)
 
 
 def create_transaction(
@@ -45,11 +48,11 @@ def create_transaction(
 
     # Format for Google Sheets (USCITE)
     # Columns: Inserito da | Data | Importo | Descrizione | Categoria | Sottocategoria | Conto
-    # Same format as trantrac/views.py:43-52
+    # Note: Using DD/MM/YYYY format for date to match Google Sheets locale
     values = [
         [
             str(user.display_name or user.email),  # Inserito da
-            transaction_date.strftime("%Y-%m-%d"),  # Data (formato ISO YYYY-MM-DD)
+            transaction_date.strftime("%d/%m/%Y"),  # Data (formato DD/MM/YYYY)
             str(amount).replace(".", ","),  # Importo (con virgola italiana)
             str(description),  # Descrizione
             str(category.name),  # Categoria
@@ -60,7 +63,9 @@ def create_transaction(
 
     try:
         # Save to Google Sheets
+        logger.info(f"Saving to Google Sheets: {values}")
         save_to_sheet(values, "USCITE")
+        logger.info("Successfully saved to Google Sheets")
 
         # Track usage for future suggestions
         CategoryUsage.objects.create(
