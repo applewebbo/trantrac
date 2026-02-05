@@ -44,14 +44,17 @@ def create_transaction(
     category = subcategory.category
 
     # Format for Google Sheets (USCITE)
+    # Columns: Inserito da | Data | Importo | Descrizione | Categoria | Sottocategoria | Conto
+    # Same format as trantrac/views.py:43-52
     values = [
         [
-            transaction_date.strftime("%d/%m/%Y"),
-            f"-{amount}",  # Negative for expenses
-            description,
-            category.name,
-            subcategory.name,
-            account.name,
+            str(user.display_name or user.email),  # Inserito da
+            transaction_date.strftime("%Y-%m-%d"),  # Data (formato ISO YYYY-MM-DD)
+            str(amount).replace(".", ","),  # Importo (con virgola italiana)
+            str(description),  # Descrizione
+            str(category.name),  # Categoria
+            str(subcategory.name),  # Sottocategoria
+            str(account.name),  # Conto
         ]
     ]
 
