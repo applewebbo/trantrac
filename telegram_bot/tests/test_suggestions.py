@@ -106,3 +106,23 @@ def test_suggestions_case_insensitive(authenticated_user, categories_setup):
     names_lower = {s.name for s in suggestions_lower}
     names_upper = {s.name for s in suggestions_upper}
     assert names_lower == names_upper
+
+
+@pytest.mark.django_db
+def test_suggestions_skips_duplicates_in_results(
+    authenticated_user, categories_setup, category_usage_history
+):
+    """Test that if same subcategory appears in history and fuzzy match, it's not duplicated"""
+    # "bar" will match both:
+    # 1. User history (Bar used 3 times)
+    # 2. Fuzzy match (name contains "bar")
+
+    suggestions = get_subcategory_suggestions(authenticated_user, "bar", limit=10)
+
+    # Check for unique subcategory IDs
+    subcat_ids = [s.id for s in suggestions]
+    assert len(subcat_ids) == len(set(subcat_ids)), "Suggestions contain duplicates"
+
+    # Bar should appear only once
+    bar_count = sum(1 for s in suggestions if s.name == "Bar")
+    assert bar_count == 1, f"Bar appears {bar_count} times, expected 1"

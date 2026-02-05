@@ -26,9 +26,6 @@ def parse_transaction_message(message: str) -> dict | None:
 
     # Split on first occurrence only (description might contain /)
     parts = message.split("/", maxsplit=1)
-    if len(parts) != 2:
-        return None
-
     amount_str, description = parts
     amount_str = amount_str.strip()
     description = description.strip()
