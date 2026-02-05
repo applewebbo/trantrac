@@ -1,5 +1,6 @@
 """Transaction handlers for Telegram bot"""
 
+from asgiref.sync import sync_to_async
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -25,11 +26,15 @@ async def route_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     message_text = update.message.text.strip()
 
     # Check authentication
-    try:
-        user = User.objects.get(telegram_chat_id=chat_id)
-    except User.DoesNotExist:
+    user = await sync_to_async(User.objects.filter(telegram_chat_id=chat_id).first)()
+
+    if not user:
         # Check if in auth flow
-        if TelegramAuthSession.objects.filter(chat_id=chat_id).exists():
+        session_exists = await sync_to_async(
+            TelegramAuthSession.objects.filter(chat_id=chat_id).exists
+        )()
+
+        if session_exists:
             # Handle as email message
             from telegram_bot.handlers.auth import handle_email_message
 
@@ -86,7 +91,9 @@ async def handle_transaction_message(
     description = parsed["description"]
 
     # Get suggestions
-    suggestions = get_subcategory_suggestions(user, description, limit=5)
+    suggestions = await sync_to_async(get_subcategory_suggestions)(
+        user, description, limit=5
+    )
 
     if not suggestions:
         await update.message.reply_text(
@@ -160,9 +167,11 @@ async def handle_subcategory_selection(
 
     # Get selected subcategory
     selected_id = suggestions_ids[choice - 1]
-    try:
-        subcategory = Subcategory.objects.get(id=selected_id)
-    except Subcategory.DoesNotExist:
+    subcategory = await sync_to_async(
+        Subcategory.objects.filter(id=selected_id).first
+    )()
+
+    if not subcategory:
         await update.message.reply_text("❌ Sottocategoria non trovata.")
         return
 
@@ -192,7 +201,9 @@ async def show_all_subcategories(
     """
     PAGE_SIZE = 10
 
-    all_subcategories = list(Subcategory.objects.select_related("category").all())
+    all_subcategories = await sync_to_async(
+        lambda: list(Subcategory.objects.select_related("category").all())
+    )()
     total_pages = (len(all_subcategories) + PAGE_SIZE - 1) // PAGE_SIZE
 
     if page < 0 or page >= total_pages:
@@ -264,14 +275,16 @@ async def handle_final_confirmation(
         return
 
     # Confirm and save
-    try:
-        subcategory = Subcategory.objects.get(id=pending["selected_subcategory_id"])
-    except Subcategory.DoesNotExist:
+    subcategory = await sync_to_async(
+        Subcategory.objects.filter(id=pending["selected_subcategory_id"]).first
+    )()
+
+    if not subcategory:
         await update.message.reply_text("❌ Sottocategoria non trovata.")
         context.user_data.clear()
         return
 
-    success, message = create_transaction(
+    success, message = await sync_to_async(create_transaction)(
         user=user,
         amount=pending["amount"],
         description=pending["description"],

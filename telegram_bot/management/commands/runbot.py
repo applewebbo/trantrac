@@ -1,5 +1,6 @@
 """Management command to run bot in polling mode (development)"""
 
+import asyncio
 import logging
 
 from django.conf import settings
@@ -15,6 +16,12 @@ from telegram_bot.handlers.auth import handle_contact, handle_start
 from telegram_bot.handlers.transaction import route_message
 
 logger = logging.getLogger(__name__)
+
+# Fix for asyncio deprecation warning on Python 3.13+
+try:
+    asyncio.get_running_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
 
 
 class Command(BaseCommand):

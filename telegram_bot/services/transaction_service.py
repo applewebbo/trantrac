@@ -1,6 +1,6 @@
 """Business logic for transaction management"""
 
-from datetime import datetime
+from datetime import date
 from decimal import Decimal
 
 from django.utils import timezone
@@ -16,7 +16,7 @@ def create_transaction(
     description: str,
     subcategory: Subcategory,
     telegram_message_id: int,
-    date: datetime.date | None = None,
+    transaction_date: date | None = None,
 ) -> tuple[bool, str]:
     """
     Create and save transaction to Google Sheets
@@ -27,13 +27,13 @@ def create_transaction(
         description: Transaction description
         subcategory: Selected Subcategory instance
         telegram_message_id: Telegram message ID for tracking
-        date: Transaction date (default: today)
+        transaction_date: Transaction date (default: today)
 
     Returns:
         Tuple of (success: bool, message: str)
     """
-    if date is None:
-        date = timezone.now().date()
+    if transaction_date is None:
+        transaction_date = timezone.now().date()
 
     # Get or create default account for user
     account, _ = Account.objects.get_or_create(
@@ -46,7 +46,7 @@ def create_transaction(
     # Format for Google Sheets (USCITE)
     values = [
         [
-            date.strftime("%d/%m/%Y"),
+            transaction_date.strftime("%d/%m/%Y"),
             f"-{amount}",  # Negative for expenses
             description,
             category.name,
@@ -80,7 +80,7 @@ def create_transaction(
             category=category,
             subcategory=subcategory,
             account=account,
-            date=date,
+            date=transaction_date,
             telegram_message_id=telegram_message_id,
             status="pending",
             last_error=str(e),
