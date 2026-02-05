@@ -43,7 +43,9 @@ def get_subcategory_suggestions(
 
     for item in recent_usage:
         try:
-            subcategory = Subcategory.objects.get(id=item["subcategory"])
+            subcategory = Subcategory.objects.select_related("category").get(
+                id=item["subcategory"]
+            )
             if subcategory.id not in seen_ids:
                 suggestions.append(subcategory)
                 seen_ids.add(subcategory.id)
@@ -53,7 +55,7 @@ def get_subcategory_suggestions(
     # Step 2: Fuzzy match on description (if we need more suggestions)
     if len(suggestions) < limit:
         description_lower = description.lower()
-        all_subcategories = Subcategory.objects.all()
+        all_subcategories = Subcategory.objects.select_related("category").all()
 
         # Calculate fuzzy scores for each subcategory
         scored_subcategories = []
