@@ -1,5 +1,7 @@
 """Transaction handlers for Telegram bot"""
 
+import logging
+
 from asgiref.sync import sync_to_async
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -10,6 +12,8 @@ from telegram_bot.services.suggestions import get_subcategory_suggestions
 from telegram_bot.services.transaction_service import create_transaction
 from trantrac.models import Subcategory
 from users.models import User
+
+logger = logging.getLogger(__name__)
 
 
 async def route_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -138,15 +142,22 @@ async def handle_subcategory_selection(
     """
     Handle subcategory selection (number input)
     """
+    logger.info(f"handle_subcategory_selection: message_text='{message_text}'")
+
     pending = context.user_data.get("pending_transaction")
     if not pending:
+        logger.warning("No pending transaction in context")
         await update.message.reply_text("❌ Nessuna transazione in attesa.")
         return
+
+    logger.info(f"Pending transaction: {pending}")
 
     # Try to parse as number
     try:
         choice = int(message_text)
+        logger.info(f"Parsed choice: {choice}")
     except ValueError:
+        logger.warning(f"Could not parse '{message_text}' as int")
         await update.message.reply_text(
             "❌ Inserisci un numero dalla lista.\nOppure annulla con /start"
         )
