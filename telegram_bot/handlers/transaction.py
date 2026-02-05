@@ -179,7 +179,7 @@ async def handle_subcategory_selection(
     # Get selected subcategory
     selected_id = suggestions_ids[choice - 1]
     subcategory = await sync_to_async(
-        Subcategory.objects.filter(id=selected_id).first
+        Subcategory.objects.select_related("category").filter(id=selected_id).first
     )()
 
     if not subcategory:
@@ -287,7 +287,9 @@ async def handle_final_confirmation(
 
     # Confirm and save
     subcategory = await sync_to_async(
-        Subcategory.objects.filter(id=pending["selected_subcategory_id"]).first
+        Subcategory.objects.select_related("category")
+        .filter(id=pending["selected_subcategory_id"])
+        .first
     )()
 
     if not subcategory:
