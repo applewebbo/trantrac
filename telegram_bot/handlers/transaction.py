@@ -10,7 +10,7 @@ from telegram_bot.models import TelegramAuthSession
 from telegram_bot.services.parser import parse_transaction_message
 from telegram_bot.services.suggestions import get_subcategory_suggestions
 from telegram_bot.services.transaction_service import create_transaction
-from trantrac.models import Subcategory
+from trantrac.models import Category, Subcategory
 from users.models import User
 
 logger = logging.getLogger(__name__)
@@ -53,13 +53,18 @@ async def route_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     # Get user's pending state from context
     user_data = context.user_data
+    awaiting_category = user_data.get("awaiting_category", False)
     awaiting_subcategory = user_data.get("awaiting_subcategory", False)
     awaiting_confirmation = user_data.get("awaiting_confirmation", False)
-    user_data.get("current_page", 0)
 
     # Handle confirmation (s/n)
     if awaiting_confirmation:
         await handle_final_confirmation(update, context, user, message_text)
+        return
+
+    # Handle category selection (number)
+    if awaiting_category:
+        await handle_category_selection(update, context, user, message_text)
         return
 
     # Handle subcategory selection (number)
@@ -125,7 +130,7 @@ async def handle_transaction_message(
     for idx, subcat in enumerate(suggestions, start=1):
         message_lines.append(f"{idx}. {subcat.name}")
 
-    message_lines.append("\n0. Altro... (mostra tutte)")
+    message_lines.append("\n0. Altro... (scegli categoria)")
 
     await update.message.reply_text(
         "\n".join(message_lines),
@@ -152,18 +157,6 @@ async def handle_subcategory_selection(
 
     logger.info(f"Pending transaction: {pending}")
 
-    # Handle navigation commands (n/p for next/previous page)
-    message_lower = message_text.lower()
-    if message_lower == "n":
-        current_page = context.user_data.get("current_page", 0)
-        await show_all_subcategories(update, context, user, page=current_page + 1)
-        return
-
-    if message_lower == "p":
-        current_page = context.user_data.get("current_page", 0)
-        await show_all_subcategories(update, context, user, page=current_page - 1)
-        return
-
     # Try to parse as number
     try:
         choice = int(message_text)
@@ -177,7 +170,7 @@ async def handle_subcategory_selection(
 
     # Handle "0. Altro..."
     if choice == 0:
-        await show_all_subcategories(update, context, user, page=0)
+        await show_all_categories(update, context, user)
         return
 
     # Validate choice
@@ -211,6 +204,131 @@ async def handle_subcategory_selection(
     )
 
 
+async def show_all_categories(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    user,
+) -> None:
+    """
+    Show list of all categories for selection
+
+    User selects a category, then sees subcategories of that category
+    """
+    all_categories = await sync_to_async(
+        lambda: list(Category.objects.all().order_by("name"))
+    )()
+
+    if not all_categories:
+        await update.message.reply_text(
+            "❌ Nessuna categoria disponibile.\n"
+            "Contatta l'amministratore per configurare le categorie."
+        )
+        return
+
+    # Store categories in context
+    context.user_data["categories"] = [c.id for c in all_categories]
+    context.user_data["awaiting_category"] = True
+    context.user_data["awaiting_subcategory"] = False
+
+    # Format message
+    message_lines = ["📋 *Scegli categoria:*\n"]
+
+    for idx, category in enumerate(all_categories, start=1):
+        message_lines.append(f"{idx}. {category.name}")
+
+    await update.message.reply_text(
+        "\n".join(message_lines),
+        parse_mode="Markdown",
+    )
+
+
+async def handle_category_selection(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    user,
+    message_text: str,
+) -> None:
+    """
+    Handle category selection (number input)
+
+    Shows subcategories of the selected category
+    """
+    pending = context.user_data.get("pending_transaction")
+    if not pending:
+        await update.message.reply_text("❌ Nessuna transazione in attesa.")
+        return
+
+    categories_ids = context.user_data.get("categories", [])
+    if not categories_ids:
+        await update.message.reply_text("❌ Nessuna categoria disponibile.")
+        return
+
+    # Try to parse as number
+    try:
+        choice = int(message_text)
+    except ValueError:
+        await update.message.reply_text(
+            "❌ Inserisci un numero dalla lista.\nOppure annulla con /start"
+        )
+        return
+
+    # Validate choice
+    if choice < 1 or choice > len(categories_ids):
+        await update.message.reply_text(
+            f"❌ Numero non valido. Scegli da 1 a {len(categories_ids)}."
+        )
+        return
+
+    # Get selected category
+    selected_category_id = categories_ids[choice - 1]
+    await show_category_subcategories(update, context, user, selected_category_id)
+
+
+async def show_category_subcategories(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    user,
+    category_id: int,
+) -> None:
+    """
+    Show all subcategories for a specific category
+    """
+    category = await sync_to_async(Category.objects.filter(id=category_id).first)()
+
+    if not category:
+        await update.message.reply_text("❌ Categoria non trovata.")
+        return
+
+    subcategories = await sync_to_async(
+        lambda: list(Subcategory.objects.filter(category=category).order_by("name"))
+    )()
+
+    if not subcategories:
+        await update.message.reply_text(
+            f"❌ Nessuna sottocategoria disponibile per *{category.name}*.",
+            parse_mode="Markdown",
+        )
+        return
+
+    # Update context with subcategories
+    context.user_data["pending_transaction"]["suggestions"] = [
+        s.id for s in subcategories
+    ]
+    context.user_data["awaiting_category"] = False
+    context.user_data["awaiting_subcategory"] = True
+
+    # Format message
+    message_lines = [f"📊 *{category.name}*\n", "Scegli sottocategoria:\n"]
+
+    for idx, subcat in enumerate(subcategories, start=1):
+        message_lines.append(f"{idx}. {subcat.name}")
+
+    await update.message.reply_text(
+        "\n".join(message_lines),
+        parse_mode="Markdown",
+    )
+
+
 async def show_all_subcategories(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -218,6 +336,8 @@ async def show_all_subcategories(
     page: int = 0,
 ) -> None:
     """
+    DEPRECATED: Use show_all_categories instead
+
     Show paginated list of all subcategories
 
     Each page shows 10 items + navigation
