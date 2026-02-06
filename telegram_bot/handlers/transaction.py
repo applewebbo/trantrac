@@ -123,7 +123,7 @@ async def handle_transaction_message(
     ]
 
     for idx, subcat in enumerate(suggestions, start=1):
-        message_lines.append(f"{idx}. {subcat.category.name} > *{subcat.name}*")
+        message_lines.append(f"{idx}. {subcat.name}")
 
     message_lines.append("\n0. Altro... (mostra tutte)")
 
@@ -246,7 +246,7 @@ async def show_all_subcategories(
     message_lines = ["📋 *Tutte le sottocategorie:*\n"]
 
     for idx, subcat in enumerate(page_items, start=start_idx + 1):
-        message_lines.append(f"{idx}. {subcat.category.name} > *{subcat.name}*")
+        message_lines.append(f"{idx}. {subcat.name}")
 
     # Navigation
     nav_parts = []
