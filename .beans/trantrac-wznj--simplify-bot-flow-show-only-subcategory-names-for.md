@@ -1,10 +1,11 @@
 ---
 # trantrac-wznj
 title: 'Simplify BOT flow - show only subcategory names for #37'
-status: in-progress
+status: completed
 type: task
+priority: normal
 created_at: 2026-02-06T15:28:35Z
-updated_at: 2026-02-06T15:28:35Z
+updated_at: 2026-02-06T15:31:03Z
 ---
 
 Simplify the Telegram bot flow by showing only subcategory names (without 'Category > Subcategory') in the selection lists.
