@@ -263,6 +263,25 @@ class TestGoogleSheetsSettingsModel(TestCase):
         )
         assert creds["client_x509_cert_url"] == "https://example.com/cert"
 
+    def test_get_credentials_dict_replaces_newlines(self):
+        """Test get_credentials_dict converts \\n to actual newlines"""
+        settings = GoogleSheetsSettings.objects.create(
+            spreadsheet_id="test-spreadsheet",
+            project_id="test-project",
+            private_key_id="test-key-id",
+            private_key="-----BEGIN PRIVATE KEY-----\\nline2\\nline3\\n-----END PRIVATE KEY-----",
+            client_email="test@example.com",
+            client_id="12345",
+            client_x509_cert_url="https://example.com/cert",
+        )
+
+        creds = settings.get_credentials_dict()
+
+        # Should convert \\n to actual newlines
+        assert "\n" in creds["private_key"]
+        assert "\\n" not in creds["private_key"]
+        assert creds["private_key"].startswith("-----BEGIN PRIVATE KEY-----\n")
+
     def test_str_representation(self):
         """Test __str__ method"""
         settings = GoogleSheetsSettings.get_settings()

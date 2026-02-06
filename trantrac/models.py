@@ -178,7 +178,7 @@ class GoogleSheetsSettings(models.Model):
             "type": "service_account",
             "project_id": self.project_id,
             "private_key_id": self.private_key_id,
-            "private_key": self.private_key,
+            "private_key": self.private_key.replace("\\n", "\n"),
             "client_email": self.client_email,
             "client_id": self.client_id,
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",

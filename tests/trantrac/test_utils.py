@@ -387,8 +387,10 @@ class TestImportCsvToSheet(TestCase):
         assert Subcategory.objects.filter(name="Groceries").count() == 1
 
     @patch("trantrac.utils.save_to_sheet")
-    def test_import_csv_save_failure(self, mock_save_sheet):
+    @patch("trantrac.models.save_category_and_sub_to_sheet")
+    def test_import_csv_save_failure(self, mock_save_cat, mock_save_sheet):
         """Test CSV import handles save_to_sheet failure"""
+        mock_save_cat.return_value = True
         mock_save_sheet.return_value = False
 
         csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo

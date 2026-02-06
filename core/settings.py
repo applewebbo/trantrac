@@ -190,20 +190,22 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
 CRISPY_TEMPLATE_PACK = "tailwind"
 
 # GOOGLE SHEETS API
+# These are optional - credentials are now managed via Django admin (GoogleSheetsSettings model)
+# Env vars are only used for initial setup when database is empty
 GOOGLE_SHEETS_CREDENTIALS = {
     "type": "service_account",
-    "project_id": env("GOOGLE_SHEETS_PROJECT_ID"),
-    "private_key_id": env("GOOGLE_SHEETS_PRIVATE_KEY_ID"),
-    "private_key": env("GOOGLE_SHEETS_PRIVATE_KEY").replace("\\n", "\n"),
-    "client_email": env("GOOGLE_SHEETS_CLIENT_EMAIL"),
-    "client_id": env("GOOGLE_SHEETS_CLIENT_ID"),
+    "project_id": env("GOOGLE_SHEETS_PROJECT_ID", default=""),
+    "private_key_id": env("GOOGLE_SHEETS_PRIVATE_KEY_ID", default=""),
+    "private_key": env("GOOGLE_SHEETS_PRIVATE_KEY", default="").replace("\\n", "\n"),
+    "client_email": env("GOOGLE_SHEETS_CLIENT_EMAIL", default=""),
+    "client_id": env("GOOGLE_SHEETS_CLIENT_ID", default=""),
     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
     "token_uri": "https://oauth2.googleapis.com/token",  # nosec B105
     "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-    "client_x509_cert_url": env("GOOGLE_SHEETS_CLIENT_X509_CERT_URL"),
+    "client_x509_cert_url": env("GOOGLE_SHEETS_CLIENT_X509_CERT_URL", default=""),
 }
 
-GOOGLE_SHEETS_SPREADSHEET_ID = env("GOOGLE_SHEETS_SPREADSHEET_ID")
+GOOGLE_SHEETS_SPREADSHEET_ID = env("GOOGLE_SHEETS_SPREADSHEET_ID", default="")
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 # TELEGRAM BOT
