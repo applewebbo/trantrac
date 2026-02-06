@@ -88,3 +88,90 @@ def sample_csv_data():
 01/01/2025,-100.50,Test Transaction,Food,Groceries,ABC123
 02/01/2025,+500.00,ENRICO Test Income,Salary,,DEF456
 03/01/2025,-50.25,Another Transaction,Transport,Bus,GHI789"""
+
+
+# telegram_bot fixtures
+
+
+@pytest.fixture
+def authenticated_user(test_user):
+    """Create an authenticated user with telegram_chat_id"""
+    test_user.telegram_chat_id = 12345
+    test_user.phone_number = "+39123456789"
+    test_user.save()
+    return test_user
+
+
+@pytest.fixture
+def categories_setup(db):
+    """Setup categories and subcategories for tests"""
+
+    # Create categories
+    alimentari = Category.objects.create(name="Alimentari")
+    trasporti = Category.objects.create(name="Trasporti")
+    casa = Category.objects.create(name="Casa")
+
+    # Create subcategories
+    bar = Subcategory.objects.create(
+        name="Bar", category=alimentari, skip_sheet_save=True
+    )
+    supermercato = Subcategory.objects.create(
+        name="Supermercato", category=alimentari, skip_sheet_save=True
+    )
+    ristorante = Subcategory.objects.create(
+        name="Ristorante", category=alimentari, skip_sheet_save=True
+    )
+    carburante = Subcategory.objects.create(
+        name="Carburante", category=trasporti, skip_sheet_save=True
+    )
+    parcheggio = Subcategory.objects.create(
+        name="Parcheggio", category=trasporti, skip_sheet_save=True
+    )
+    affitto = Subcategory.objects.create(
+        name="Affitto", category=casa, skip_sheet_save=True
+    )
+
+    # Create account
+    test_account = Account.objects.create(name="Test User")
+
+    return {
+        "alimentari": alimentari,
+        "trasporti": trasporti,
+        "casa": casa,
+        "bar": bar,
+        "supermercato": supermercato,
+        "ristorante": ristorante,
+        "carburante": carburante,
+        "parcheggio": parcheggio,
+        "affitto": affitto,
+        "account": test_account,
+    }
+
+
+@pytest.fixture
+def category_usage_history(authenticated_user, categories_setup):
+    """Create category usage history for testing suggestions"""
+    from trantrac.models import CategoryUsage
+
+    # User has used Bar 3 times
+    for _ in range(3):
+        CategoryUsage.objects.create(
+            user=authenticated_user,
+            category=categories_setup["alimentari"],
+            subcategory=categories_setup["bar"],
+        )
+
+    # User has used Supermercato 1 time
+    CategoryUsage.objects.create(
+        user=authenticated_user,
+        category=categories_setup["alimentari"],
+        subcategory=categories_setup["supermercato"],
+    )
+
+    # User has used Carburante 2 times
+    for _ in range(2):
+        CategoryUsage.objects.create(
+            user=authenticated_user,
+            category=categories_setup["trasporti"],
+            subcategory=categories_setup["carburante"],
+        )
