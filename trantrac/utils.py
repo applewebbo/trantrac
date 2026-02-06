@@ -33,36 +33,39 @@ def save_to_sheet(values, sheet_name):
     service = get_sheets_service()
     spreadsheet_id = get_spreadsheet_id()
 
-    # Get the current length of data in the sheet
-    result = (
-        service.spreadsheets()
-        .values()
-        .get(
-            spreadsheetId=spreadsheet_id,
-            range=f"{sheet_name}!A:C",
+    try:
+        # Get the current length of data in the sheet
+        result = (
+            service.spreadsheets()
+            .values()
+            .get(
+                spreadsheetId=spreadsheet_id,
+                range=f"{sheet_name}!A:C",
+            )
+            .execute()
         )
-        .execute()
-    )
 
-    current_rows = len(result.get("values", [])) if result.get("values") else 0
-    start_row = current_rows + 1
+        current_rows = len(result.get("values", [])) if result.get("values") else 0
+        start_row = current_rows + 1
 
-    body = {"values": values}
-    result = (
-        service.spreadsheets()
-        .values()
-        .append(
-            spreadsheetId=spreadsheet_id,
-            range=f"{sheet_name}!A{start_row}:C{start_row}",
-            valueInputOption="USER_ENTERED",
-            insertDataOption="INSERT_ROWS",
-            body=body,
+        body = {"values": values}
+        result = (
+            service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=spreadsheet_id,
+                range=f"{sheet_name}!A{start_row}:C{start_row}",
+                valueInputOption="USER_ENTERED",
+                insertDataOption="INSERT_ROWS",
+                body=body,
+            )
+            .execute()
         )
-        .execute()
-    )
 
-    expected_rows = len(values)
-    return result.get("updates").get("updatedRows") == expected_rows
+        expected_rows = len(values)
+        return result.get("updates").get("updatedRows") == expected_rows
+    finally:
+        service.close()
 
 
 def import_csv_to_sheet(csv_file, user):
@@ -212,3 +215,5 @@ def get_sheet_data(sheet_name, range_name):
         return result.get("values", [])
     except Exception:
         return None
+    finally:
+        service.close()
