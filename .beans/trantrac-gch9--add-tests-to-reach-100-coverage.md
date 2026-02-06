@@ -1,10 +1,11 @@
 ---
 # trantrac-gch9
 title: Add tests to reach 100% coverage
-status: in-progress
+status: completed
 type: task
+priority: normal
 created_at: 2026-02-06T09:07:01Z
-updated_at: 2026-02-06T09:07:01Z
+updated_at: 2026-02-06T09:18:58Z
 ---
 
 Add missing tests to achieve 100% code coverage across the project.
