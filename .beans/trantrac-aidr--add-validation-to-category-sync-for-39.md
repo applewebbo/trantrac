@@ -1,10 +1,11 @@
 ---
 # trantrac-aidr
 title: 'Add validation to category sync for #39'
-status: in-progress
+status: completed
 type: feature
+priority: normal
 created_at: 2026-02-06T15:59:00Z
-updated_at: 2026-02-06T15:59:00Z
+updated_at: 2026-02-06T16:05:43Z
 ---
 
 Add validation and feedback to category synchronization from Google Sheets.
