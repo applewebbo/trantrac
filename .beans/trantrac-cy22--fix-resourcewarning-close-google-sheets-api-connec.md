@@ -1,10 +1,11 @@
 ---
 # trantrac-cy22
 title: 'Fix ResourceWarning: close Google Sheets API connections for #38'
-status: in-progress
+status: completed
 type: bug
+priority: normal
 created_at: 2026-02-06T15:35:14Z
-updated_at: 2026-02-06T15:35:14Z
+updated_at: 2026-02-06T15:40:10Z
 ---
 
 Fix ResourceWarning about unclosed SSL sockets in Google Sheets API calls.
