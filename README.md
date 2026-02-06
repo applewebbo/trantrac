@@ -9,6 +9,7 @@ TranTrac helps families track their financial transactions by providing a simple
 ## Features
 
 - **Transaction Management**: Add, edit, and categorize financial transactions
+- **Telegram Bot**: Quick expense tracking via Telegram with smart category suggestions ([Setup Guide](bot.md))
 - **Google Sheets Integration**: Automatic sync of all transactions to Google Sheets
 - **CSV Import**: Bulk import transactions from bank CSV exports
 - **Category Management**: Organize transactions with categories and subcategories
@@ -24,6 +25,18 @@ TranTrac helps families track their financial transactions by providing a simple
 - **Server**: Granian (WSGI) with uvloop
 - **Package Management**: uv for Python dependencies
 - **Google Sheets API**: Service account integration for data sync
+- **Telegram Bot**: python-telegram-bot v22+ with webhook support
+
+## Telegram Bot
+
+TranTrac includes a Telegram bot for quick expense tracking on the go. Features:
+
+- **Simple format**: Send `50/caffè` to record a €50 coffee expense
+- **Smart suggestions**: AI-powered category suggestions based on your history
+- **Instant sync**: Transactions saved directly to Google Sheets
+- **Secure auth**: Phone number + email verification
+
+📱 **[Complete Setup Guide](bot.md)** - Learn how to create and configure your bot
 
 ## Development
 
