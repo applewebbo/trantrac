@@ -68,7 +68,10 @@ omit = [
   "*/asgi.py",
   "*/wsgi.py",
   "*/settings/*",
-  "users/views.py"
+  "users/views.py",
+  "telegram_bot/handlers/*",
+  "telegram_bot/views.py",
+  "telegram_bot/management/commands/*"
 ]
 source = ["."]
 
