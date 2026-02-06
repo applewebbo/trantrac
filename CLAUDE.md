@@ -82,12 +82,14 @@ just issue-label <number> <labels>  # Add labels (space-separated)
 ### Key Components
 
 **Google Sheets Integration** (trantrac/utils.py):
-- `get_sheets_service()`: Cached service account credentials connection
+- `get_sheets_service()`: Get Google Sheets API service using credentials from database
+- `get_spreadsheet_id()`: Get spreadsheet ID from database settings
 - `save_to_sheet(values, sheet_name)`: Append transactions to sheets (ENTRATE/USCITE)
 - `import_csv_to_sheet(csv_file, user)`: Parse CSV and sync to Google Sheets, separating positive (ENTRATE) and negative (USCITE) transactions
 - `get_sheet_data(sheet_name, range_name)`: Read data from sheets
 
 **Models** (trantrac/models.py):
+- `GoogleSheetsSettings`: Singleton model storing Google Sheets API credentials (managed via Django admin)
 - `Category` and `Subcategory`: Transaction categories with auto-sync to Google Sheets on save
 - `Account`: Bank accounts
 - Note: Subcategories use `skip_sheet_save` flag to prevent duplicate saves during bulk operations
@@ -102,11 +104,13 @@ just issue-label <number> <labels>  # Add labels (space-separated)
 ### Settings Configuration
 
 Uses django-environ for environment variables. Key settings:
-- Google Sheets credentials via service account (JSON constructed from env vars)
+- **Google Sheets**: Configuration managed via Django admin (`GoogleSheetsSettings` model). Initial setup uses env vars, but credentials should be managed through the admin interface after first migration.
 - Mailgun email backend (django-anymail)
 - Custom user model: `users.User` (email-based, no username)
 - SQLite with WAL mode and custom PRAGMA settings for performance
 - Locale: Italian (it-it, Europe/Rome)
+
+**Note**: After initial setup, configure Google Sheets credentials in Django admin at `/admin/trantrac/googlesheetssettings/` instead of using environment variables.
 
 ### Frontend
 

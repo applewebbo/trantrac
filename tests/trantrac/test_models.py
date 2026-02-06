@@ -1,9 +1,16 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from django.core.exceptions import ValidationError
 
 from tests.conftest import TestCase
-from trantrac.models import Account, Category, CategoryUsage, Subcategory
+from trantrac.models import (
+    Account,
+    Category,
+    CategoryUsage,
+    GoogleSheetsSettings,
+    Subcategory,
+)
 
 
 @pytest.mark.django_db
@@ -174,3 +181,98 @@ class TestSaveCategoryAndSubToSheet:
 
         assert result is False
         mock_service.close.assert_called_once()
+
+
+@pytest.mark.django_db
+class TestGoogleSheetsSettingsModel(TestCase):
+    def test_create_settings(self):
+        """Test creating Google Sheets settings"""
+        settings = GoogleSheetsSettings.objects.create(
+            spreadsheet_id="test-spreadsheet-id",
+            project_id="test-project",
+            private_key_id="test-key-id",
+            private_key="test-private-key",
+            client_email="test@example.com",
+            client_id="12345",
+            client_x509_cert_url="https://example.com/cert",
+        )
+        assert settings.spreadsheet_id == "test-spreadsheet-id"
+        assert settings.project_id == "test-project"
+        assert settings.client_email == "test@example.com"
+
+    def test_singleton_pattern(self):
+        """Test only one instance can be created"""
+        GoogleSheetsSettings.objects.create(
+            spreadsheet_id="test-1",
+            project_id="project-1",
+            private_key_id="key-1",
+            private_key="private-key-1",
+            client_email="test1@example.com",
+            client_id="123",
+            client_x509_cert_url="https://example.com/cert1",
+        )
+
+        with pytest.raises(ValidationError):
+            GoogleSheetsSettings.objects.create(
+                spreadsheet_id="test-2",
+                project_id="project-2",
+                private_key_id="key-2",
+                private_key="private-key-2",
+                client_email="test2@example.com",
+                client_id="456",
+                client_x509_cert_url="https://example.com/cert2",
+            )
+
+    def test_get_settings_creates_if_not_exists(self):
+        """Test get_settings creates instance if it doesn't exist"""
+        settings = GoogleSheetsSettings.get_settings()
+        assert settings is not None
+        assert settings.pk == 1
+
+    def test_get_settings_returns_existing(self):
+        """Test get_settings returns existing instance"""
+        first = GoogleSheetsSettings.get_settings()
+        second = GoogleSheetsSettings.get_settings()
+        assert first.pk == second.pk
+
+    def test_get_credentials_dict(self):
+        """Test get_credentials_dict returns properly formatted dict"""
+        settings = GoogleSheetsSettings.objects.create(
+            spreadsheet_id="test-spreadsheet",
+            project_id="test-project",
+            private_key_id="test-key-id",
+            private_key="test-private-key",
+            client_email="test@example.com",
+            client_id="12345",
+            client_x509_cert_url="https://example.com/cert",
+        )
+
+        creds = settings.get_credentials_dict()
+
+        assert creds["type"] == "service_account"
+        assert creds["project_id"] == "test-project"
+        assert creds["private_key_id"] == "test-key-id"
+        assert creds["private_key"] == "test-private-key"
+        assert creds["client_email"] == "test@example.com"
+        assert creds["client_id"] == "12345"
+        assert creds["auth_uri"] == "https://accounts.google.com/o/oauth2/auth"
+        assert creds["token_uri"] == "https://oauth2.googleapis.com/token"
+        assert (
+            creds["auth_provider_x509_cert_url"]
+            == "https://www.googleapis.com/oauth2/v1/certs"
+        )
+        assert creds["client_x509_cert_url"] == "https://example.com/cert"
+
+    def test_str_representation(self):
+        """Test __str__ method"""
+        settings = GoogleSheetsSettings.get_settings()
+        assert "Google Sheets Settings" in str(settings)
+        assert "aggiornato" in str(settings)
+
+    def test_verbose_names(self):
+        """Test verbose names"""
+        assert GoogleSheetsSettings._meta.verbose_name == "Impostazioni Google Sheets"
+        assert (
+            GoogleSheetsSettings._meta.verbose_name_plural
+            == "Impostazioni Google Sheets"
+        )

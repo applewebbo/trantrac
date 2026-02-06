@@ -1,33 +1,44 @@
 import csv
-from functools import lru_cache
 from io import TextIOWrapper
 
-from django.conf import settings
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-from trantrac.models import Category, Subcategory, save_category_and_sub_to_sheet
+
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
-@lru_cache(maxsize=1)
 def get_sheets_service():
-    """ " Get a service object for interacting with the Sheets API"""
+    """Get a service object for interacting with the Sheets API"""
+    # Import here to avoid circular import
+    from trantrac.models import GoogleSheetsSettings
+
+    sheets_settings = GoogleSheetsSettings.get_settings()
     credentials = service_account.Credentials.from_service_account_info(
-        settings.GOOGLE_SHEETS_CREDENTIALS, scopes=settings.SCOPES
+        sheets_settings.get_credentials_dict(), scopes=SCOPES
     )
     return build("sheets", "v4", credentials=credentials)
+
+
+def get_spreadsheet_id():
+    """Get the current spreadsheet ID from settings"""
+    # Import here to avoid circular import
+    from trantrac.models import GoogleSheetsSettings
+
+    return GoogleSheetsSettings.get_settings().spreadsheet_id
 
 
 def save_to_sheet(values, sheet_name):
     """Save data to Google Sheets, appending to the first empty row"""
     service = get_sheets_service()
+    spreadsheet_id = get_spreadsheet_id()
 
     # Get the current length of data in the sheet
     result = (
         service.spreadsheets()
         .values()
         .get(
-            spreadsheetId=settings.GOOGLE_SHEETS_SPREADSHEET_ID,
+            spreadsheetId=spreadsheet_id,
             range=f"{sheet_name}!A:C",
         )
         .execute()
@@ -41,7 +52,7 @@ def save_to_sheet(values, sheet_name):
         service.spreadsheets()
         .values()
         .append(
-            spreadsheetId=settings.GOOGLE_SHEETS_SPREADSHEET_ID,
+            spreadsheetId=spreadsheet_id,
             range=f"{sheet_name}!A{start_row}:C{start_row}",
             valueInputOption="USER_ENTERED",
             insertDataOption="INSERT_ROWS",
@@ -56,6 +67,9 @@ def save_to_sheet(values, sheet_name):
 
 def import_csv_to_sheet(csv_file, user):
     """Import CSV file to Google Sheets separating positive and negative transactions"""
+    # Import here to avoid circular import
+    from trantrac.models import Category, Subcategory, save_category_and_sub_to_sheet
+
     REQUIRED_COLUMNS = {
         "Data operazione",
         "Importo",
@@ -182,13 +196,14 @@ def import_csv_to_sheet(csv_file, user):
 def get_sheet_data(sheet_name, range_name):
     """Get data from specified sheet and range"""
     service = get_sheets_service()
+    spreadsheet_id = get_spreadsheet_id()
     sheet = service.spreadsheets()
 
     try:
         result = (
             sheet.values()
             .get(
-                spreadsheetId=settings.GOOGLE_SHEETS_SPREADSHEET_ID,
+                spreadsheetId=spreadsheet_id,
                 range=f"{sheet_name}!{range_name}",
             )
             .execute()

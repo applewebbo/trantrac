@@ -16,38 +16,55 @@ from trantrac.utils import (
 
 @pytest.mark.django_db
 class TestGetSheetsService:
+    @patch("trantrac.models.GoogleSheetsSettings.get_settings")
     @patch("trantrac.utils.build")
     @patch("trantrac.utils.service_account.Credentials.from_service_account_info")
-    def test_get_sheets_service_returns_service(self, mock_creds, mock_build):
+    def test_get_sheets_service_returns_service(
+        self, mock_creds, mock_build, mock_get_settings
+    ):
         """Test get_sheets_service returns Google Sheets service"""
+        # Mock GoogleSheetsSettings
+        mock_settings = MagicMock()
+        mock_settings.get_credentials_dict.return_value = {
+            "type": "service_account",
+            "project_id": "test-project",
+        }
+        mock_get_settings.return_value = mock_settings
+
         mock_service = MagicMock()
         mock_build.return_value = mock_service
-
-        # Clear cache first
-        get_sheets_service.cache_clear()
 
         service = get_sheets_service()
 
         assert service == mock_service
         mock_build.assert_called_once()
 
+    @patch("trantrac.models.GoogleSheetsSettings.get_settings")
     @patch("trantrac.utils.build")
     @patch("trantrac.utils.service_account.Credentials.from_service_account_info")
-    def test_get_sheets_service_cached(self, mock_creds, mock_build):
-        """Test get_sheets_service uses cache"""
+    def test_get_sheets_service_uses_db_settings(
+        self, mock_creds, mock_build, mock_get_settings
+    ):
+        """Test get_sheets_service uses settings from database"""
+        # Mock GoogleSheetsSettings
+        mock_settings = MagicMock()
+        mock_settings.get_credentials_dict.return_value = {
+            "type": "service_account",
+            "project_id": "test-project",
+            "client_email": "test@example.com",
+        }
+        mock_get_settings.return_value = mock_settings
+
         mock_service = MagicMock()
         mock_build.return_value = mock_service
 
-        # Clear cache first
-        get_sheets_service.cache_clear()
+        service = get_sheets_service()
 
-        # Call twice
-        service1 = get_sheets_service()
-        service2 = get_sheets_service()
-
-        assert service1 == service2
-        # Should only build once due to caching
-        assert mock_build.call_count == 1
+        # Verify get_credentials_dict was called
+        mock_settings.get_credentials_dict.assert_called_once()
+        # Verify credentials were created from the dict
+        mock_creds.assert_called_once()
+        assert service == mock_service
 
 
 @pytest.mark.django_db
