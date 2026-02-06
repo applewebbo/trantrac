@@ -41,9 +41,9 @@ migrate:
 test:
     uv run pytest tests/
 
-# Run fast parallel tests
+# Run fast parallel tests with coverage
 ftest:
-    uv run pytest tests/ -n 8 --reuse-db --no-cov
+    uv run pytest tests/ -n 8 --reuse-db --cov --cov-report=term-missing --cov-fail-under=100
 
 # Run tests with coverage report
 test-cov:

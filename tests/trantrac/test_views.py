@@ -449,3 +449,91 @@ class TestRefreshCategoriesView(TestCase):
         """Test refresh_categories view requires authentication"""
         response = self.get("refresh_categories")
         assert response.status_code == 302
+
+    @patch("trantrac.views.get_sheet_data")
+    def test_refresh_categories_skips_duplicates_in_same_sync(self, mock_get_data):
+        """Test refresh_categories skips duplicate rows in the same sync"""
+        # Duplicate rows in the sheet data
+        mock_get_data.return_value = [
+            ["Food", "Groceries"],
+            ["Food", "Groceries"],  # Duplicate
+            ["Food", "Meat"],
+            ["Transport", "Bus"],
+            ["Transport", "Bus"],  # Duplicate
+        ]
+
+        with self.login(username=self.user.email, password="password"):
+            response = self.get("refresh_categories")
+
+        # Should create only unique items
+        assert Category.objects.filter(name="Food").count() == 1
+        assert Category.objects.filter(name="Transport").count() == 1
+        assert Subcategory.objects.filter(name="Groceries").count() == 1
+        assert Subcategory.objects.filter(name="Meat").count() == 1
+        assert Subcategory.objects.filter(name="Bus").count() == 1
+
+        # Check feedback message includes skipped count
+        messages = list(get_messages(response.wsgi_request))
+        assert any("duplicate saltate" in str(m) for m in messages)
+
+    @patch("trantrac.views.get_sheet_data")
+    def test_refresh_categories_no_changes_needed(self, mock_get_data):
+        """Test refresh_categories when all categories already exist"""
+        # Create existing categories
+        food_cat = Category.objects.create(name="Food")
+        Subcategory.objects.create(
+            name="Groceries", category=food_cat, skip_sheet_save=True
+        )
+
+        # Same data in sheet
+        mock_get_data.return_value = [["Food", "Groceries"]]
+
+        with self.login(username=self.user.email, password="password"):
+            response = self.get("refresh_categories")
+
+        # Check message indicates no changes
+        messages = list(get_messages(response.wsgi_request))
+        assert any("Nessuna modifica necessaria" in str(m) for m in messages)
+
+    @patch("trantrac.views.get_sheet_data")
+    def test_refresh_categories_skips_empty_category_names(self, mock_get_data):
+        """Test refresh_categories skips rows with empty category names after strip"""
+        mock_get_data.return_value = [
+            ["Food", "Groceries"],
+            ["  ", "ShouldBeSkipped"],  # Empty after strip
+            ["", "AlsoSkipped"],  # Empty string
+            ["Transport", "Bus"],
+        ]
+
+        # Count before sync
+        initial_count = Category.objects.count()
+
+        with self.login(username=self.user.email, password="password"):
+            self.get("refresh_categories")
+
+        # Should create only 2 valid categories (Food and Transport)
+        assert Category.objects.count() == initial_count + 2
+        assert Category.objects.filter(name="Food").exists()
+        assert Category.objects.filter(name="Transport").exists()
+
+        # Should not create subcategories with empty category names
+        assert not Subcategory.objects.filter(name="ShouldBeSkipped").exists()
+        assert not Subcategory.objects.filter(name="AlsoSkipped").exists()
+
+    @patch("trantrac.views.get_sheet_data")
+    def test_refresh_categories_stops_at_empty_row(self, mock_get_data):
+        """Test refresh_categories stops reading when encountering empty row"""
+        mock_get_data.return_value = [
+            ["Food", "Groceries"],
+            ["Transport", "Bus"],
+            [],  # Empty row - should stop here
+            ["ShouldNotBeRead", "AfterEmpty"],
+        ]
+
+        with self.login(username=self.user.email, password="password"):
+            self.get("refresh_categories")
+
+        # Should only process rows before empty row
+        assert Category.objects.filter(name="Food").exists()
+        assert Category.objects.filter(name="Transport").exists()
+        assert not Category.objects.filter(name="ShouldNotBeRead").exists()

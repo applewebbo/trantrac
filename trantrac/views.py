@@ -166,29 +166,65 @@ def load_subcategories(request):
 @login_required
 def refresh_categories(request):
     sheet_data = get_sheet_data("CATEGORIE", "A2:B")
-    if sheet_data:
-        for row in sheet_data:
-            category_name = row[0] if row else None
-            subcategory_name = row[1] if len(row) > 1 else None
-
-            if category_name:
-                # Get or create category
-                category, _ = Category.objects.get_or_create(name=category_name)
-
-                # Create subcategory if it exists
-                if subcategory_name:
-                    Subcategory.objects.get_or_create(
-                        name=subcategory_name,
-                        category=category,
-                        defaults={"skip_sheet_save": True},
-                    )
-
-        messages.add_message(
-            request, messages.SUCCESS, "Categorie aggiornate con successo"
-        )
-    else:
+    if not sheet_data:
         messages.add_message(
             request, messages.ERROR, "Impossibile recuperare i dati dal foglio"
         )
+        return HttpResponse(status=204, headers={"HX-Redirect": reverse("index")})
 
+    # Counters for feedback
+    categories_created = 0
+    subcategories_created = 0
+    skipped = 0
+    seen_pairs = set()
+
+    for row in sheet_data:
+        # Stop if row is completely empty
+        if not row:
+            break
+
+        category_name = row[0].strip() if row[0] else ""
+        subcategory_name = row[1].strip() if len(row) > 1 and row[1] else None
+
+        # Skip if no category name after stripping
+        if not category_name:
+            continue
+
+        # Skip duplicates
+        pair = (category_name, subcategory_name)
+        if pair in seen_pairs:
+            skipped += 1
+            continue
+        seen_pairs.add(pair)
+
+        # Get or create category
+        category, cat_created = Category.objects.get_or_create(name=category_name)
+        if cat_created:
+            categories_created += 1
+
+        # Create subcategory if it exists
+        if subcategory_name:
+            _, sub_created = Subcategory.objects.get_or_create(
+                name=subcategory_name,
+                category=category,
+                defaults={"skip_sheet_save": True},
+            )
+            if sub_created:
+                subcategories_created += 1
+
+    # Detailed feedback message
+    feedback_parts = []
+    if categories_created > 0:
+        feedback_parts.append(f"{categories_created} nuove categorie")
+    if subcategories_created > 0:
+        feedback_parts.append(f"{subcategories_created} nuove sottocategorie")
+    if skipped > 0:
+        feedback_parts.append(f"{skipped} duplicate saltate")
+
+    if feedback_parts:
+        message = f"Sincronizzazione completata: {', '.join(feedback_parts)}"
+    else:
+        message = "Nessuna modifica necessaria"
+
+    messages.add_message(request, messages.SUCCESS, message)
     return HttpResponse(status=204, headers={"HX-Redirect": reverse("index")})
