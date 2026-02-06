@@ -1,10 +1,11 @@
 ---
 # trantrac-zndg
 title: 'Implement two-level category selection in ''Altro'' flow for #40'
-status: in-progress
+status: completed
 type: feature
+priority: normal
 created_at: 2026-02-06T16:06:45Z
-updated_at: 2026-02-06T16:06:45Z
+updated_at: 2026-02-06T16:10:53Z
 ---
 
 Modify the Telegram bot 'Altro' flow to show categories first, then subcategories.
