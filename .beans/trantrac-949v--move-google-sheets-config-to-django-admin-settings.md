@@ -1,10 +1,11 @@
 ---
 # trantrac-949v
 title: Move Google Sheets config to Django admin settings page
-status: in-progress
+status: completed
 type: feature
+priority: normal
 created_at: 2026-02-06T07:55:20Z
-updated_at: 2026-02-06T07:55:20Z
+updated_at: 2026-02-06T08:09:04Z
 ---
 
 Move Google Sheets credentials from environment variables to Django admin settings page for better management and UX.
