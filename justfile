@@ -53,6 +53,17 @@ lint:
     uv run ruff check --fix --unsafe-fixes .
     uv run ruff format .
     just _pre-commit run --all-files
+    @echo "\n✓ Lint completato"
+    @echo "⚠️  Se ci sono file modificati, devono essere ri-staged:"
+    @git status --short 2>/dev/null | head -10 || true
+
+# Lint and auto-stage all changes (use before commit)
+lint-stage:
+    just lint
+    @echo "\n📦 Auto-staging delle modifiche..."
+    git add -u
+    @echo "✓ File staged. Pronto per il commit"
+    @git status --short
 
 _pre-commit *args:
     uvx prek {{ args }}

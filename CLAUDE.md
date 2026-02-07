@@ -8,7 +8,7 @@ Family Finance Tracker that syncs transactions to Google Sheets. Built with Djan
 
 ## Tech Stack
 
-- **Backend**: Django 6.0.1 + Python 3.13+
+- **Backend**: Django 6.0+ + Python 3.13+
 - **Frontend**: HTMX + Tailwind CSS 4.1.2 + DaisyUI (beta)
 - **Database**: SQLite with WAL mode enabled
 - **Server**: Granian (WSGI) with uvloop
@@ -37,19 +37,22 @@ python manage.py makemigrations  # Create migrations
 
 ### Testing
 ```bash
-just test  # Run pytest with coverage (COVERAGE_CORE=sysmon, --reuse-db, -s)
-just ftest  # Fast parallel tests (pytest -n 8 --reuse-db)
+just test  # Run pytest with coverage
+just ftest  # Fast parallel tests (pytest -n 8 --reuse-db, 100% coverage required)
 ```
 
 ### Code Quality
 ```bash
 just lint  # Run ruff check, ruff format, and pre-commit hooks
+just lint-stage  # Lint and auto-stage all changes (use before commit)
+just secure  # Run uv-secure for security checks
 ```
 
 ### Updates
 ```bash
 just update_all  # Upgrade all packages
 just update <package>  # Upgrade specific package
+just lock  # Rebuild lock file
 ```
 
 ### Docker
@@ -149,6 +152,11 @@ No test files found in the codebase yet. When writing tests:
 - Always run `just lint` BEFORE `git add` to avoid pre-commit hook conflicts
 - Use conventional commit format (feat:, fix:, docs:, etc.)
 - Reference the issue with "for #<number>" in the commit message
+- If the commit fix the issue reference the issue with "fix #<number>" in the commit message
 - Write commit messages in English
-- **Never cite Claude or AI assistance in commit messages**
+- **NO CLAUDE IN COMMITS**: Never cite Claude or AI assistance in commit messages
 - Keep commit messages concise but descriptive
+- **NO AUTO-COMMITS**: Never execute `git commit` autonomously during coding tasks or conversations.
+- **EXCLUSIVE COMMAND**: Only create commits when I explicitly run the `/commit` command or ask "please commit".
+- **USE SKILL**: When asked to commit, ALWAYS invoke the defined `commit` skill logic (lint -> add -> commit) instead of running raw git commands manually.
+- **NO PUSH**: Never run `git push` unless explicitly requested.
