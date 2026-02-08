@@ -4,12 +4,8 @@ when:
 
 steps:
 - name: test
-  image: python:3.14-slim
+  image: ghcr.io/astral-sh/uv:python3.14-bookworm-slim
   commands:
-      # Install uv
-  - curl -LsSf https://astral.sh/uv/install.sh | sh
-  - export PATH="$HOME/.local/bin:$PATH"
-
       # Install dependencies
   - uv sync
 
