@@ -61,7 +61,11 @@ lint:
 lint-stage:
     just lint
     @echo "\n📦 Auto-staging delle modifiche..."
-    git add -u
+    git add -A
+    @echo "\n🔍 Eseguo pre-commit sui file staged..."
+    just _pre-commit run || true
+    @echo "\n📦 Re-staging dopo pre-commit fixes..."
+    git add -A
     @echo "✓ File staged. Pronto per il commit"
     @git status --short
 

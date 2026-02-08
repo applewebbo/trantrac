@@ -146,17 +146,18 @@ No test files found in the codebase yet. When writing tests:
 - Use pytest with `--reuse-db` flag
 - Test files should be named `test_*.py`
 - Configure conftest.py for fixtures if needed
+- Coverage must be 100%
 
 ## Git Commit Guidelines
 
-- Always run `just lint` BEFORE `git add` to avoid pre-commit hook conflicts
-- Use conventional commit format (feat:, fix:, docs:, etc.)
-- Reference the issue with "for #<number>" in the commit message
-- If the commit fix the issue reference the issue with "fix #<number>" in the commit message
-- Write commit messages in English
+- **ALWAYS USE `/commit` SKILL**: Never run `git commit` manually. The skill handles everything:
+  - Runs `just lint-stage` (lint + auto-stage + pre-commit hooks)
+  - Creates conventional commit with Gitmoji
+  - Handles all edge cases (new files, pre-commit fixes, etc.)
+- **Conventional Commits**: Format is `<emoji> <type>(<scope>): <description>`
+- **Issue References**: Use "for #<number>" in commit message, or "fix #<number>" if closing the issue
+- **Language**: Commit messages MUST be in English
 - **NO CLAUDE IN COMMITS**: Never cite Claude or AI assistance in commit messages
-- Keep commit messages concise but descriptive
-- **NO AUTO-COMMITS**: Never execute `git commit` autonomously during coding tasks or conversations.
-- **EXCLUSIVE COMMAND**: Only create commits when I explicitly run the `/commit` command or ask "please commit".
-- **USE SKILL**: When asked to commit, ALWAYS invoke the defined `commit` skill logic (lint -> add -> commit) instead of running raw git commands manually.
-- **NO PUSH**: Never run `git push` unless explicitly requested.
+- **NO AUTO-COMMITS**: Never execute `git commit` autonomously during coding tasks
+- **EXCLUSIVE COMMAND**: Only create commits when user explicitly runs `/commit` or asks "please commit"
+- **NO PUSH**: Never run `git push` unless explicitly requested
