@@ -19,7 +19,7 @@ TranTrac helps families track their financial transactions by providing a simple
 
 ## Tech Stack
 
-- **Backend**: Django 5.1 + Python 3.13+
+- **Backend**: Django 5.1 + Python 3.14+
 - **Frontend**: HTMX + Tailwind CSS 4.1.2 + DaisyUI
 - **Database**: SQLite with WAL mode
 - **Server**: Granian (WSGI) with uvloop
@@ -42,7 +42,7 @@ TranTrac includes a Telegram bot for quick expense tracking on the go. Features:
 
 ### Prerequisites
 
-- Python 3.13+
+- Python 3.14+
 - uv (Python package manager)
 - bun (for frontend dependencies)
 

@@ -41,7 +41,7 @@ def parse_transaction_message(message: str) -> dict | None:
 
     try:
         amount = Decimal(amount_str)
-    except (InvalidOperation, ValueError):
+    except InvalidOperation, ValueError:
         return None
 
     # Validate amount (must be positive and non-zero)

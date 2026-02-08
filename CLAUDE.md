@@ -8,7 +8,7 @@ Family Finance Tracker that syncs transactions to Google Sheets. Built with Djan
 
 ## Tech Stack
 
-- **Backend**: Django 6.0+ + Python 3.13+
+- **Backend**: Django 6.0+ + Python 3.14+
 - **Frontend**: HTMX + Tailwind CSS 4.1.2 + DaisyUI (beta)
 - **Database**: SQLite with WAL mode enabled
 - **Server**: Granian (WSGI) with uvloop
@@ -124,7 +124,7 @@ Uses django-environ for environment variables. Key settings:
 
 ### Production Deployment
 
-- Dockerfile uses Python 3.13-slim with uv and bun
+- Dockerfile uses Python 3.14-slim with uv and bun
 - Granian WSGI server (2 workers, uvloop, backpressure 16)
 - WhiteNoise for static files
 - entrypoint.sh: migrate → tailwind build → collectstatic → granian
@@ -132,8 +132,8 @@ Uses django-environ for environment variables. Key settings:
 ## Pre-commit Hooks
 
 Configured hooks:
-- pyupgrade (--py313-plus)
-- django-upgrade (Django 5.1)
+- pyupgrade (--py314-plus)
+- django-upgrade (Django 6.0)
 - djade (Django template linting)
 - ruff (check + format)
 - bandit (security)

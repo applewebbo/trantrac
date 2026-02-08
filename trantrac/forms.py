@@ -167,7 +167,7 @@ class TransactionForm(forms.Form):
                 self.fields["subcategory"].queryset = Subcategory.objects.filter(
                     category_id=category_id
                 ).order_by("name")
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 pass
         self.helper.field_class = "grow mb-3"
 

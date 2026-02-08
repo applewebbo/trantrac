@@ -65,7 +65,7 @@ help - Show help message
 
 ### Prerequisites
 
-- Python 3.13+
+- Python 3.14+
 - uv (Python package manager)
 - Telegram bot token from BotFather
 
