@@ -99,7 +99,7 @@ async def handle_transaction_message(
     amount = parsed["amount"]
     description = parsed["description"]
 
-    # Get suggestions
+    # Get suggestions with category info (select_related already in get_subcategory_suggestions)
     suggestions = await sync_to_async(get_subcategory_suggestions)(
         user, description, limit=5
     )
@@ -128,7 +128,7 @@ async def handle_transaction_message(
     ]
 
     for idx, subcat in enumerate(suggestions, start=1):
-        message_lines.append(f"{idx}. {subcat.name}")
+        message_lines.append(f"{idx}. {subcat.category.name} > {subcat.name}")
 
     message_lines.append("\n0. Altro... (scegli categoria)")
 
@@ -168,9 +168,16 @@ async def handle_subcategory_selection(
         )
         return
 
-    # Handle "0. Altro..."
+    # Handle "0. Altro..." or "0. Torna alle categorie"
     if choice == 0:
-        await show_all_categories(update, context, user)
+        # Check if we're in a category (back to categories) or in suggestions (go to categories)
+        if context.user_data.get("selected_category_id"):
+            # Back to categories
+            context.user_data.pop("selected_category_id", None)
+            await show_all_categories(update, context, user)
+        else:
+            # Show all categories
+            await show_all_categories(update, context, user)
         return
 
     # Validate choice
@@ -314,6 +321,7 @@ async def show_category_subcategories(
     context.user_data["pending_transaction"]["suggestions"] = [
         s.id for s in subcategories
     ]
+    context.user_data["selected_category_id"] = category_id
     context.user_data["awaiting_category"] = False
     context.user_data["awaiting_subcategory"] = True
 
@@ -322,6 +330,8 @@ async def show_category_subcategories(
 
     for idx, subcat in enumerate(subcategories, start=1):
         message_lines.append(f"{idx}. {subcat.name}")
+
+    message_lines.append("\n0. Torna alle categorie")
 
     await update.message.reply_text(
         "\n".join(message_lines),

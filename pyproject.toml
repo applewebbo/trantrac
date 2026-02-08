@@ -27,7 +27,7 @@ dependencies = [
   "google-api-python-client>=2.159.0",
   "google-auth>=2.37.0",
   "heroicons[django]>=2.10.0",
-  "python-telegram-bot[webhook]>=22.6",
+  "python-telegram-bot[webhooks]>=22.6",
   "rapidfuzz>=3.14.3",
   "uvloop>=0.21.0"
 ]
