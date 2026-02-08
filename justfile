@@ -3,52 +3,70 @@
 default:
     @just --list
 
+# ============================================================================
+# Setup
+# ============================================================================
+
 # Bootstrap the project (UV and BUN needed)
+[group: 'setup']
 bootstrap:
     uv venv
     source .venv/bin/activate
     uv sync
     bun add -D daisyui@beta
 
-# Run the local development server
-local:
-    uv run python manage.py tailwind runserver --force-default-runserver
-
-
 # Install requirements
+[group: 'setup']
 requirements:
     uv sync
 
-# Update all packages
-@update_all: lock
-    uv sync --all-extras --upgrade
-    uvx --with pre-commit-uv prek auto-update
+# ============================================================================
+# Development
+# ============================================================================
 
-@lock:
-    echo "Rebuilding lock file..."
-    uv lock --upgrade
-    echo "Done!"
+# Run the local development server
+[group: 'dev']
+local:
+    uv run python manage.py tailwind runserver --force-default-runserver
 
-# Update a specific package
-update package:
-    uv sync --upgrade-package {{package}}
+# Run the Telegram bot (polling mode)
+[group: 'dev']
+runbot:
+    uv run python manage.py runbot
+
+# ============================================================================
+# Database
+# ============================================================================
 
 # Run database migrations
+[group: 'database']
 migrate:
     uv run python manage.py migrate
 
+# ============================================================================
+# Testing
+# ============================================================================
+
 # Run tests with coverage
+[group: 'test']
 test:
     uv run pytest tests/
 
 # Run fast parallel tests with coverage
+[group: 'test']
 ftest:
     uv run pytest tests/ -n 8 --reuse-db --cov --cov-report=term-missing --cov-fail-under=100
 
 # Run tests with coverage report
+[group: 'test']
 test-cov:
     uv run pytest tests/ --cov --cov-report=html --cov-report=term-missing
 
+# ============================================================================
+# Code Quality
+# ============================================================================
+
+[group: 'quality']
 lint:
     uv run ruff check --fix --unsafe-fixes .
     uv run ruff format .
@@ -58,6 +76,7 @@ lint:
     @git status --short 2>/dev/null | head -10 || true
 
 # Lint and auto-stage all changes (use before commit)
+[group: 'quality']
 lint-stage:
     just lint
     @echo "\n📦 Auto-staging delle modifiche..."
@@ -69,20 +88,53 @@ lint-stage:
     @echo "✓ File staged. Pronto per il commit"
     @git status --short
 
-_pre-commit *args:
-    uvx prek {{ args }}
-
+[group: 'quality']
 secure:
     uv-secure
 
+_pre-commit *args:
+    uvx prek {{ args }}
+
+# ============================================================================
+# Dependencies
+# ============================================================================
+
+# Update all packages
+[group: 'dependencies']
+@update_all: lock
+    uv sync --all-extras --upgrade
+    uvx --with pre-commit-uv prek auto-update
+
+[group: 'dependencies']
+@lock:
+    echo "Rebuilding lock file..."
+    uv lock --upgrade
+    echo "Done!"
+
+# Update a specific package
+[group: 'dependencies']
+update package:
+    uv sync --upgrade-package {{package}}
+
+# ============================================================================
+# Docker
+# ============================================================================
+
+[group: 'docker']
 docker_up:
     docker compose up -d
 
+[group: 'docker']
 docker_build:
     docker compose up -d --build
 
+[group: 'docker']
 docker_down:
     docker compose down -v
+
+# ============================================================================
+# Codeberg Issues
+# ============================================================================
 
 # List issues (state: open|closed|all)
 [group: 'codeberg']
