@@ -14,3 +14,7 @@ steps:
   environment:
     SECRET_KEY: test-secret-key-for-ci
     DEBUG: true
+    ADMIN_EMAIL: admin@test.local
+    MAILGUN_API_KEY: test-mailgun-key
+    MAILGUN_API_URL: https://api.mailgun.net/v3
+    MAILGUN_SENDER_DOMAIN: mg.test.local
