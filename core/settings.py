@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     # Third-party apps
     "allauth",
     "allauth.account",
+    "invitations",
     "anymail",
     "crispy_forms",
     "crispy_tailwind",
@@ -184,6 +185,12 @@ ACCOUNT_UNIQUE_EMAIL = True
 
 LOGIN_REDIRECT_URL = "index"
 ACCOUNT_LOGOUT_REDIRECT_URL = "index"
+
+# DJANGO-INVITATIONS
+ACCOUNT_ADAPTER = "invitations.models.InvitationsAdapter"
+INVITATIONS_ADAPTER = ACCOUNT_ADAPTER
+INVITATIONS_INVITATION_ONLY = True
+INVITATIONS_ACCEPT_INVITE_AFTER_SIGNUP = True
 
 # CRISPY TAILWIND
 CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
