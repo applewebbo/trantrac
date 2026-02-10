@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Report Mensili{% endblock %}
+
+{% block content %}
+<meta name="robots" content="noindex">
+<div class="container px-4 my-2 mx-auto max-w-screen-sm sm:my-8">
+  <h1 class="mb-6 text-2xl font-semibold">Report Mensili</h1>
+
+  {% if reports %}
+    <div class="overflow-x-auto">
+      <table class="table w-full table-zebra">
+        <thead>
+          <tr>
+            <th>Periodo</th>
+            <th class="text-right">Entrate</th>
+            <th class="text-right">Uscite</th>
+            <th class="text-right">Saldo</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in reports %}
+          <tr>
+            <td>
+              <span class="font-medium">{{ report.month_name }} {{ report.year }}</span>
+              <br>
+              <span class="text-xs text-base-content/50">{{ report.generated_at|date:"d/m/Y" }}</span>
+            </td>
+            <td class="text-right text-success">€{{ report.total_income|floatformat:2 }}</td>
+            <td class="text-right text-error">€{{ report.total_expenses|floatformat:2 }}</td>
+            <td class="font-medium text-right">€{{ report.balance|floatformat:2 }}</td>
+            <td class="text-right">
+              <a href="{% url 'download_report' report.year report.month %}"
+                 class="btn btn-sm btn-primary">
+                Scarica PDF
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-info">
+      <span>Nessun report disponibile. I report vengono generati automaticamente il 1° di ogni mese.</span>
+    </div>
+  {% endif %}
+</div>
+{% endblock content %}

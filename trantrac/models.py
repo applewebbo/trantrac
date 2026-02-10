@@ -207,6 +207,25 @@ class MonthlyReport(models.Model):
     transaction_count_income = models.IntegerField(default=0)
     transaction_count_expenses = models.IntegerField(default=0)
 
+    MONTH_NAMES = {
+        1: "Gennaio",
+        2: "Febbraio",
+        3: "Marzo",
+        4: "Aprile",
+        5: "Maggio",
+        6: "Giugno",
+        7: "Luglio",
+        8: "Agosto",
+        9: "Settembre",
+        10: "Ottobre",
+        11: "Novembre",
+        12: "Dicembre",
+    }
+
+    @property
+    def month_name(self):
+        return self.MONTH_NAMES.get(self.month, str(self.month))
+
     class Meta:
         verbose_name = "report mensile"
         verbose_name_plural = "report mensili"

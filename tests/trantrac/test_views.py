@@ -1,3 +1,5 @@
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -5,7 +7,9 @@ from django.contrib.messages import get_messages
 from django.urls import reverse
 
 from tests.conftest import TestCase
-from trantrac.models import Account, Category, CategoryUsage, Subcategory
+from django.test import override_settings
+
+from trantrac.models import Account, Category, CategoryUsage, MonthlyReport, Subcategory
 from trantrac.views import get_most_used_categories, get_recent_categories
 
 
@@ -537,3 +541,113 @@ class TestRefreshCategoriesView(TestCase):
         assert Category.objects.filter(name="Food").exists()
         assert Category.objects.filter(name="Transport").exists()
         assert not Category.objects.filter(name="ShouldNotBeRead").exists()
+
+
+@pytest.mark.django_db
+class TestReportsListView(TestCase):
+    def setUp(self):
+        self.user = self.make_user("test@example.com")
+
+    def test_requires_login(self):
+        response = self.get("reports_list")
+        assert response.status_code == 302
+
+    def test_empty_state(self):
+        with self.login(username=self.user.email, password="password"):
+            response = self.get("reports_list")
+        assert response.status_code == 200
+        self.assertTemplateUsed(response, "trantrac/reports_list.html")
+        assert list(response.context["reports"]) == []
+
+    def test_shows_available_reports(self):
+        MonthlyReport.objects.create(
+            year=2025, month=1, total_income=1000, total_expenses=300, balance=700
+        )
+        MonthlyReport.objects.create(
+            year=2025, month=2, total_income=1200, total_expenses=400, balance=800
+        )
+        with self.login(username=self.user.email, password="password"):
+            response = self.get("reports_list")
+        assert response.status_code == 200
+        assert response.context["reports"].count() == 2
+
+    def test_reports_ordered_by_year_month_desc(self):
+        MonthlyReport.objects.create(year=2025, month=1)
+        MonthlyReport.objects.create(year=2025, month=3)
+        MonthlyReport.objects.create(year=2024, month=12)
+        with self.login(username=self.user.email, password="password"):
+            response = self.get("reports_list")
+        reports = list(response.context["reports"])
+        assert reports[0].month == 3
+        assert reports[1].month == 1
+        assert reports[2].year == 2024
+
+
+@pytest.mark.django_db
+class TestDownloadReportView(TestCase):
+    def setUp(self):
+        self.user = self.make_user("test@example.com")
+
+    def test_requires_login(self):
+        response = self.client.get(
+            reverse("download_report", kwargs={"year": 2025, "month": 1})
+        )
+        assert response.status_code == 302
+
+    def test_returns_404_for_nonexistent_report(self):
+        with self.login(username=self.user.email, password="password"):
+            response = self.client.get(
+                reverse("download_report", kwargs={"year": 2099, "month": 1})
+            )
+        assert response.status_code == 404
+
+    def test_returns_404_when_no_pdf_file(self):
+        MonthlyReport.objects.create(year=2025, month=4)
+        with self.login(username=self.user.email, password="password"):
+            response = self.client.get(
+                reverse("download_report", kwargs={"year": 2025, "month": 4})
+            )
+        assert response.status_code == 404
+
+    def test_serves_pdf_with_correct_headers(self):
+        pdf_content = b"%PDF-1.4 fake content"
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            report_dir = tmp_path / "reports" / "2025"
+            report_dir.mkdir(parents=True)
+            (report_dir / "test.pdf").write_bytes(pdf_content)
+
+            with override_settings(MEDIA_ROOT=tmp_path):
+                report = MonthlyReport.objects.create(year=2025, month=5)
+                report.pdf_file = "reports/2025/test.pdf"
+                report.save()
+
+                with self.login(username=self.user.email, password="password"):
+                    response = self.client.get(
+                        reverse("download_report", kwargs={"year": 2025, "month": 5})
+                    )
+
+            assert response.status_code == 200
+            assert response["Content-Type"] == "application/pdf"
+            assert "attachment" in response["Content-Disposition"]
+            assert "report_2025_05.pdf" in response["Content-Disposition"]
+
+    def test_download_filename_format(self):
+        pdf_content = b"%PDF-1.4"
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            report_dir = tmp_path / "reports" / "2025"
+            report_dir.mkdir(parents=True)
+            (report_dir / "test2.pdf").write_bytes(pdf_content)
+
+            with override_settings(MEDIA_ROOT=tmp_path):
+                report = MonthlyReport.objects.create(year=2025, month=6)
+                report.pdf_file = "reports/2025/test2.pdf"
+                report.save()
+
+                with self.login(username=self.user.email, password="password"):
+                    response = self.client.get(
+                        reverse("download_report", kwargs={"year": 2025, "month": 6})
+                    )
+
+            assert "report_2025_06.pdf" in response["Content-Disposition"]

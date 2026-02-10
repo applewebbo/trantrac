@@ -27,6 +27,10 @@
               {% heroicon_micro 'document-arrow-up' class='size-5' %}
               Carica
             </button>
+            <a href="{% url 'reports_list' %}" class="flex items-center btn btn-sm">
+              {% heroicon_micro 'document-chart-bar' class='size-5' %}
+              Report
+            </a>
             <form action="{% url 'account_logout' %}" method="post">
               {% csrf_token %}
               <button type="submit" class="btn btn-primary btn-sm">Esci</button>
@@ -66,6 +70,12 @@
              class="flex items-center w-full btn">
             {% heroicon_micro 'document-arrow-up' class='size-5' %}
             Importa Transazioni
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'reports_list' %}" class="flex items-center w-full btn">
+            {% heroicon_micro 'document-chart-bar' class='size-5' %}
+            Report Mensili
           </a>
         </li>
         <li>

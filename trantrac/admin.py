@@ -1,6 +1,12 @@
 from django.contrib import admin
 
-from trantrac.models import Account, Category, GoogleSheetsSettings, Subcategory
+from trantrac.models import (
+    Account,
+    Category,
+    GoogleSheetsSettings,
+    MonthlyReport,
+    Subcategory,
+)
 
 
 @admin.register(GoogleSheetsSettings)
@@ -50,3 +56,27 @@ class GoogleSheetsSettingsAdmin(admin.ModelAdmin):
 admin.site.register(Category)
 admin.site.register(Subcategory)
 admin.site.register(Account)
+
+
+@admin.register(MonthlyReport)
+class MonthlyReportAdmin(admin.ModelAdmin):
+    list_display = (
+        "year",
+        "month",
+        "generated_at",
+        "total_income",
+        "total_expenses",
+        "balance",
+    )
+    list_filter = ("year", "month")
+    readonly_fields = (
+        "pdf_file",
+        "generated_at",
+        "sheets_last_modified",
+        "total_income",
+        "total_expenses",
+        "balance",
+        "transaction_count_income",
+        "transaction_count_expenses",
+    )
+    ordering = ("-year", "-month")

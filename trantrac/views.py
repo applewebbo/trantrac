@@ -1,14 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
-from django.http import HttpResponse
-from django.shortcuts import redirect
+from django.http import FileResponse, Http404, HttpResponse
+from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
 
 from trantrac.forms import CategoryForm, CsvUploadForm, SubcategoryForm, TransactionForm
-from trantrac.models import Category, CategoryUsage, Subcategory
-from trantrac.utils import import_csv_to_sheet, save_to_sheet, get_sheet_data
+from trantrac.models import Category, CategoryUsage, MonthlyReport, Subcategory
+from trantrac.utils import get_sheet_data, import_csv_to_sheet, save_to_sheet
 
 
 def get_recent_categories(limit=6):
@@ -228,3 +228,22 @@ def refresh_categories(request):
 
     messages.add_message(request, messages.SUCCESS, message)
     return HttpResponse(status=204, headers={"HX-Redirect": reverse("index")})
+
+
+@login_required
+def reports_list(request):
+    reports = MonthlyReport.objects.order_by("-year", "-month")
+    return TemplateResponse(request, "trantrac/reports_list.html", {"reports": reports})
+
+
+@login_required
+def download_report(request, year, month):
+    report = get_object_or_404(MonthlyReport, year=year, month=month)
+    if not report.pdf_file:
+        raise Http404
+    return FileResponse(
+        report.pdf_file.open("rb"),
+        content_type="application/pdf",
+        as_attachment=True,
+        filename=f"report_{year}_{month:02d}.pdf",
+    )
