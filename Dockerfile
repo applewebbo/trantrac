@@ -10,8 +10,16 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONPATH=/srv
 ENV PYTHONUNBUFFERED=1
 
-# install uv and other dependencies
-RUN apt-get update && apt-get install -y curl unzip
+# install uv and other dependencies (including WeasyPrint system libs)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    unzip \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libgdk-pixbuf2.0-0 \
+    libffi-dev \
+    shared-mime-info \
+    && rm -rf /var/lib/apt/lists/*
 RUN pip install --upgrade pip uv
 RUN python -m uv venv
 

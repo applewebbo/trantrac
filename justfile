@@ -50,17 +50,17 @@ migrate:
 # Run tests with coverage
 [group: 'test']
 test:
-    uv run pytest tests/
+    DYLD_LIBRARY_PATH=/opt/homebrew/lib uv run pytest tests/
 
 # Run fast parallel tests with coverage
 [group: 'test']
 ftest:
-    uv run pytest tests/ -n 8 --reuse-db --cov --cov-report=term-missing --cov-fail-under=100
+    DYLD_LIBRARY_PATH=/opt/homebrew/lib uv run pytest tests/ -n 8 --reuse-db --cov --cov-report=term-missing --cov-fail-under=100
 
 # Run tests with coverage report
 [group: 'test']
 test-cov:
-    uv run pytest tests/ --cov --cov-report=html --cov-report=term-missing
+    DYLD_LIBRARY_PATH=/opt/homebrew/lib uv run pytest tests/ --cov --cov-report=html --cov-report=term-missing
 
 # ============================================================================
 # Code Quality

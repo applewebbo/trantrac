@@ -9,6 +9,7 @@ from trantrac.models import (
     Category,
     CategoryUsage,
     GoogleSheetsSettings,
+    MonthlyReport,
     Subcategory,
 )
 
@@ -295,3 +296,51 @@ class TestGoogleSheetsSettingsModel(TestCase):
             GoogleSheetsSettings._meta.verbose_name_plural
             == "Impostazioni Google Sheets"
         )
+
+
+@pytest.mark.django_db
+class TestMonthlyReportModel(TestCase):
+    def test_create_monthly_report(self):
+        """Test creating a monthly report"""
+        report = MonthlyReport.objects.create(year=2025, month=1)
+        assert report.year == 2025
+        assert report.month == 1
+        assert report.pk is not None
+
+    def test_default_values(self):
+        """Test default field values"""
+        from decimal import Decimal
+
+        report = MonthlyReport.objects.create(year=2025, month=2)
+        assert report.total_income == Decimal("0")
+        assert report.total_expenses == Decimal("0")
+        assert report.balance == Decimal("0")
+        assert report.transaction_count_income == 0
+        assert report.transaction_count_expenses == 0
+        assert report.sheets_last_modified is None
+        assert report.pdf_file.name == ""
+
+    def test_unique_constraint(self):
+        """Test that only one report per year/month is allowed"""
+        from django.db import IntegrityError
+
+        MonthlyReport.objects.create(year=2025, month=3)
+        with pytest.raises(IntegrityError):
+            MonthlyReport.objects.create(year=2025, month=3)
+
+    def test_verbose_names(self):
+        """Test verbose names"""
+        assert MonthlyReport._meta.verbose_name == "report mensile"
+        assert MonthlyReport._meta.verbose_name_plural == "report mensili"
+
+    def test_report_upload_path(self):
+        """Test UUID-based upload path generation"""
+        from trantrac.models import report_upload_path
+
+        report = MonthlyReport(year=2025, month=1)
+        path = report_upload_path(report, "ignored.pdf")
+        assert path.startswith("reports/2025/")
+        assert path.endswith(".pdf")
+        # Ensure UUID is used (different calls produce different paths)
+        path2 = report_upload_path(report, "ignored.pdf")
+        assert path != path2

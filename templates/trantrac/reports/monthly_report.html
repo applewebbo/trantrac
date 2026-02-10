@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Report Mensile {{ month_name }} {{ year }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2cm;
+    }
+    body {
+      font-family: "DejaVu Sans", Arial, sans-serif;
+      font-size: 11pt;
+      color: #1a1a1a;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      font-size: 18pt;
+      color: #2563eb;
+      margin-bottom: 4px;
+    }
+    h2 {
+      font-size: 13pt;
+      color: #1e40af;
+      margin-top: 20px;
+      margin-bottom: 8px;
+      border-bottom: 1.5px solid #93c5fd;
+      padding-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 10pt;
+      color: #6b7280;
+      margin-bottom: 20px;
+    }
+    .summary-cards {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .card {
+      flex: 1;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 12px 16px;
+      background: #f9fafb;
+    }
+    .card-label {
+      font-size: 9pt;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+    .card-value {
+      font-size: 14pt;
+      font-weight: bold;
+    }
+    .card-income .card-value { color: #16a34a; }
+    .card-expenses .card-value { color: #dc2626; }
+    .card-balance .card-value { color: #2563eb; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+      font-size: 10pt;
+    }
+    thead tr {
+      background: #eff6ff;
+    }
+    th {
+      text-align: left;
+      padding: 8px 10px;
+      font-weight: 600;
+      color: #1e40af;
+      border-bottom: 1.5px solid #bfdbfe;
+    }
+    th.right, td.right {
+      text-align: right;
+    }
+    td {
+      padding: 7px 10px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    .total-row td {
+      font-weight: bold;
+      background: #f0f7ff;
+      border-top: 1.5px solid #bfdbfe;
+    }
+    .footer {
+      margin-top: 32px;
+      font-size: 8pt;
+      color: #9ca3af;
+      text-align: center;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Report Mensile Familiare</h1>
+  <div class="subtitle">{{ month_name }} {{ year }}</div>
+
+  <!-- Summary cards -->
+  <div class="summary-cards">
+    <div class="card card-income">
+      <div class="card-label">Entrate totali</div>
+      <div class="card-value">€{{ total_income|floatformat:2 }}</div>
+    </div>
+    <div class="card card-expenses">
+      <div class="card-label">Uscite totali</div>
+      <div class="card-value">€{{ total_expenses|floatformat:2 }}</div>
+    </div>
+    <div class="card card-balance">
+      <div class="card-label">Saldo</div>
+      <div class="card-value">€{{ balance|floatformat:2 }}</div>
+    </div>
+  </div>
+
+  <!-- Entrate per utente -->
+  <h2>Entrate per utente</h2>
+  {% if income_by_user %}
+  <table>
+    <thead>
+      <tr>
+        <th>Utente</th>
+        <th class="right">Importo</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user, amount in income_by_user.items %}
+      <tr>
+        <td>{{ user }}</td>
+        <td class="right">€{{ amount|floatformat:2 }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="total-row">
+        <td>Totale</td>
+        <td class="right">€{{ total_income|floatformat:2 }}</td>
+      </tr>
+    </tbody>
+  </table>
+  {% else %}
+  <p>Nessuna entrata per questo mese.</p>
+  {% endif %}
+
+  <!-- Uscite per categoria -->
+  <h2>Uscite per categoria</h2>
+  {% if expenses_by_category %}
+  <table>
+    <thead>
+      <tr>
+        <th>Categoria</th>
+        <th class="right">Importo</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for category, amount in expenses_by_category.items %}
+      <tr>
+        <td>{{ category }}</td>
+        <td class="right">€{{ amount|floatformat:2 }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="total-row">
+        <td>Totale</td>
+        <td class="right">€{{ total_expenses|floatformat:2 }}</td>
+      </tr>
+    </tbody>
+  </table>
+  {% else %}
+  <p>Nessuna uscita per questo mese.</p>
+  {% endif %}
+
+  <!-- Uscite per utente -->
+  <h2>Uscite per utente</h2>
+  {% if expenses_by_user %}
+  <table>
+    <thead>
+      <tr>
+        <th>Utente</th>
+        <th class="right">Importo</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user, amount in expenses_by_user.items %}
+      <tr>
+        <td>{{ user }}</td>
+        <td class="right">€{{ amount|floatformat:2 }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="total-row">
+        <td>Totale</td>
+        <td class="right">€{{ total_expenses|floatformat:2 }}</td>
+      </tr>
+    </tbody>
+  </table>
+  {% else %}
+  <p>Nessuna uscita per questo mese.</p>
+  {% endif %}
+
+  <div class="footer">
+    Generato il {{ generated_at }} — Report familiare riservato
+  </div>
+
+</body>
+</html>

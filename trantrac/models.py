@@ -1,3 +1,5 @@
+import uuid
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -186,3 +188,28 @@ class GoogleSheetsSettings(models.Model):
             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
             "client_x509_cert_url": self.client_x509_cert_url,
         }
+
+
+def report_upload_path(instance, filename):
+    """Generate UUID-based upload path for monthly reports"""
+    return f"reports/{instance.year}/{uuid.uuid4()}.pdf"
+
+
+class MonthlyReport(models.Model):
+    year = models.IntegerField()
+    month = models.IntegerField()
+    pdf_file = models.FileField(upload_to=report_upload_path, blank=True)
+    generated_at = models.DateTimeField(auto_now_add=True)
+    sheets_last_modified = models.DateTimeField(null=True, blank=True)
+    total_income = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_expenses = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    transaction_count_income = models.IntegerField(default=0)
+    transaction_count_expenses = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = "report mensile"
+        verbose_name_plural = "report mensili"
+        constraints = [
+            models.UniqueConstraint(fields=["year", "month"], name="unique_year_month")
+        ]
