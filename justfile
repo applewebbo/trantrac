@@ -151,6 +151,11 @@ issue number:
 issue-comment number text:
     ./bin/codeberg comment {{number}} "{{text}}"
 
+# Mark a checkbox step as done in issue body
+[group: 'codeberg']
+issue-check number step:
+    ./bin/codeberg check {{number}} "{{step}}"
+
 # Close issue
 [group: 'codeberg']
 issue-close number:

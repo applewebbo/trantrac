@@ -135,7 +135,7 @@ cmd_comment() {
     detect_repo
 
     local data
-    data=$(python3 -c "import json; print(json.dumps({'body': '''$comment_text'''}))")
+    data=$(CB_BODY="$comment_text" python3 -c "import json, os; print(json.dumps({'body': os.environ['CB_BODY']}))")
 
     echo -e "${GREEN}Adding comment to issue #$issue_num...${NC}"
     api_request POST "/repos/$REPO_OWNER/$REPO_NAME/issues/$issue_num/comments" "$data" >/dev/null
@@ -172,30 +172,86 @@ cmd_label() {
 
     detect_repo
 
-    # Get current labels
-    local current_labels
-    current_labels=$(api_request GET "/repos/$REPO_OWNER/$REPO_NAME/issues/$issue_num/labels")
+    # Get all repo labels to resolve names -> IDs
+    local repo_labels
+    repo_labels=$(api_request GET "/repos/$REPO_OWNER/$REPO_NAME/labels?limit=50")
 
-    # Merge with new labels (avoiding duplicates)
-    local label_data
-    label_data=$(python3 -c "
-import json, sys
-current = json.loads('''$current_labels''')
-current_names = [l['name'] for l in current]
-new_labels = $( printf '%s\n' "${labels[@]}" | python3 -c "import sys, json; print(json.dumps([l.strip() for l in sys.stdin]))" )
-all_labels = list(set(current_names + new_labels))
-print(json.dumps({'labels': all_labels}))
-")
+    # Resolve label names to IDs
+    local label_ids
+    label_ids=$(CB_REPO_LABELS="$repo_labels" python3 -c "
+import json, os, sys
+repo_labels = json.loads(os.environ['CB_REPO_LABELS'])
+name_to_id = {l['name'].lower(): l['id'] for l in repo_labels}
+requested = sys.argv[1:]
+ids = []
+missing = []
+for name in requested:
+    lid = name_to_id.get(name.lower())
+    if lid is not None:
+        ids.append(lid)
+    else:
+        missing.append(name)
+if missing:
+    import sys as _sys
+    print(f'Warning: labels not found in repo: {missing}', file=_sys.stderr)
+print(json.dumps({'labels': ids}))
+" "${labels[@]}")
+
+    if [[ -z "$label_ids" || "$label_ids" == '{"labels": []}' ]]; then
+        echo -e "${RED}Error: None of the specified labels exist in the repository${NC}" >&2
+        exit 1
+    fi
 
     echo -e "${GREEN}Adding labels to issue #$issue_num...${NC}"
-    api_request PATCH "/repos/$REPO_OWNER/$REPO_NAME/issues/$issue_num" "$label_data" >/dev/null
+    api_request POST "/repos/$REPO_OWNER/$REPO_NAME/issues/$issue_num/labels" "$label_ids" >/dev/null
     echo -e "${GREEN}✓ Labels added: ${labels[*]}${NC}"
+}
+
+cmd_check() {
+    local issue_num=$1
+    shift
+    local step_text="$*"
+
+    if [[ -z "$step_text" ]]; then
+        echo -e "${RED}Error: Step text required${NC}" >&2
+        exit 1
+    fi
+
+    detect_repo
+
+    # Fetch current body
+    local current_body
+    current_body=$(api_request GET "/repos/$REPO_OWNER/$REPO_NAME/issues/$issue_num" | \
+        python3 -c "import sys, json; print(json.load(sys.stdin).get('body') or '')")
+
+    # Replace - [ ] step with - [x] step
+    local new_body
+    new_body=$(CB_BODY="$current_body" CB_STEP="$step_text" python3 -c "
+import os
+body = os.environ['CB_BODY']
+step = os.environ['CB_STEP']
+old = f'- [ ] {step}'
+new = f'- [x] {step}'
+if old not in body:
+    import sys
+    print(f'Error: step not found: {step}', file=sys.stderr)
+    sys.exit(1)
+print(body.replace(old, new, 1))
+")
+
+    local data
+    data=$(CB_BODY="$new_body" python3 -c "import json, os; print(json.dumps({'body': os.environ['CB_BODY']}))")
+
+    echo -e "${GREEN}Marking step as done in issue #$issue_num...${NC}"
+    api_request PATCH "/repos/$REPO_OWNER/$REPO_NAME/issues/$issue_num" "$data" >/dev/null
+    echo -e "${GREEN}✓ Step checked: $step_text${NC}"
 }
 
 cmd_create() {
     local title="$1"
     shift
-    local body="${*:-}"
+    local body
+    body=$(printf "%b" "${*:-}")
 
     if [[ -z "$title" ]]; then
         echo -e "${RED}Error: Title required${NC}" >&2
@@ -205,7 +261,7 @@ cmd_create() {
     detect_repo
 
     local data
-    data=$(python3 -c "import json; print(json.dumps({'title': '''$title''', 'body': '''$body'''}))")
+    data=$(CB_TITLE="$title" CB_BODY="$body" python3 -c "import json, os; print(json.dumps({'title': os.environ['CB_TITLE'], 'body': os.environ['CB_BODY']}))")
 
     echo -e "${GREEN}Creating issue...${NC}"
     local response
@@ -226,6 +282,7 @@ ${YELLOW}Commands:${NC}
   list [state]              List issues (state: open|closed|all, default: open)
   show <number>             Show issue details and comments
   comment <number> <text>   Add comment to issue
+  check <number> <step>     Mark a checkbox step as done in issue body
   close <number>            Close issue
   reopen <number>           Reopen issue
   label <number> <labels>   Add labels to issue (space-separated)
@@ -237,6 +294,7 @@ ${YELLOW}Examples:${NC}
   codeberg list closed
   codeberg show 32
   codeberg comment 32 "Fixed in commit abc123"
+  codeberg check 32 "Add migration"
   codeberg close 32
   codeberg label 32 bug enhancement
   codeberg create "New feature" "Description here"
@@ -276,6 +334,13 @@ main() {
                 exit 1
             fi
             cmd_comment "$@"
+            ;;
+        check)
+            if [[ $# -lt 2 ]]; then
+                echo -e "${RED}Error: Issue number and step text required${NC}" >&2
+                exit 1
+            fi
+            cmd_check "$@"
             ;;
         close)
             if [[ $# -eq 0 ]]; then
