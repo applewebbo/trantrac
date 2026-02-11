@@ -1,5 +1,7 @@
+from datetime import date
+from decimal import Decimal
 from io import StringIO
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from django.core.management import call_command
@@ -111,3 +113,201 @@ class TestSendMonthlyReminderCommand:
         assert mock_send_mail.call_count == 1
         output = out.getvalue()
         assert "1 emails sent, 0 failed" in output
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# generate_monthly_report command
+# ──────────────────────────────────────────────────────────────────────────────
+
+from trantrac.management.commands.generate_monthly_report import get_previous_month  # noqa: E402
+
+
+class TestGetPreviousMonth:
+    def test_january_returns_december_previous_year(self):
+        assert get_previous_month(date(2025, 1, 15)) == (2024, 12)
+
+    def test_other_month_returns_previous_month(self):
+        assert get_previous_month(date(2025, 3, 1)) == (2025, 2)
+        assert get_previous_month(date(2025, 12, 31)) == (2025, 11)
+
+
+@pytest.mark.django_db
+class TestGenerateMonthlyReportCommand:
+    CMD = "generate_monthly_report"
+
+    def _make_report(self, year=2025, month=1):
+        from trantrac.models import MonthlyReport
+
+        report = MonthlyReport.objects.create(
+            year=year,
+            month=month,
+            total_income=Decimal("1000"),
+            total_expenses=Decimal("300"),
+            balance=Decimal("700"),
+        )
+        report.pdf_file.name = f"reports/{year}/fake.pdf"
+        report.save()
+        return report
+
+    @patch(
+        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
+    )
+    def test_generates_report_for_explicit_month(self, mock_gen):
+        mock_report = MagicMock()
+        mock_report.total_income = Decimal("500")
+        mock_report.total_expenses = Decimal("200")
+        mock_report.balance = Decimal("300")
+        mock_gen.return_value = mock_report
+
+        out = StringIO()
+        call_command(self.CMD, "--year=2025", "--month=3", stdout=out)
+
+        mock_gen.assert_called_once_with(2025, 3)
+        assert "generated successfully" in out.getvalue()
+
+    @patch(
+        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
+    )
+    @patch("trantrac.management.commands.generate_monthly_report.date")
+    def test_defaults_to_previous_month(self, mock_date, mock_gen):
+        mock_date.today.return_value = date(2025, 4, 1)
+        mock_report = MagicMock()
+        mock_report.total_income = Decimal("0")
+        mock_report.total_expenses = Decimal("0")
+        mock_report.balance = Decimal("0")
+        mock_gen.return_value = mock_report
+
+        out = StringIO()
+        call_command(self.CMD, stdout=out)
+
+        mock_gen.assert_called_once_with(2025, 3)
+
+    @patch(
+        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
+    )
+    def test_skips_when_no_transactions(self, mock_gen):
+        mock_gen.return_value = None
+
+        out = StringIO()
+        with pytest.raises(SystemExit) as exc_info:
+            call_command(self.CMD, "--year=2025", "--month=2", stdout=out)
+
+        assert exc_info.value.code == 2
+        assert "No transactions" in out.getvalue()
+
+    def test_skips_when_report_already_exists(self):
+        from trantrac.models import MonthlyReport
+
+        report = MonthlyReport.objects.create(year=2025, month=5)
+        # Simulate a pdf_file being set
+        MonthlyReport.objects.filter(pk=report.pk).update(
+            pdf_file="reports/2025/fake.pdf"
+        )
+
+        out = StringIO()
+        with pytest.raises(SystemExit) as exc_info:
+            call_command(self.CMD, "--year=2025", "--month=5", stdout=out)
+
+        assert exc_info.value.code == 2
+        assert "already exists" in out.getvalue()
+
+    @patch(
+        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
+    )
+    def test_force_regenerates_existing_report(self, mock_gen):
+        from trantrac.models import MonthlyReport
+
+        report = MonthlyReport.objects.create(year=2025, month=6)
+        MonthlyReport.objects.filter(pk=report.pk).update(
+            pdf_file="reports/2025/fake.pdf"
+        )
+
+        mock_report = MagicMock()
+        mock_report.total_income = Decimal("100")
+        mock_report.total_expenses = Decimal("50")
+        mock_report.balance = Decimal("50")
+        mock_gen.return_value = mock_report
+
+        out = StringIO()
+        call_command(self.CMD, "--year=2025", "--month=6", "--force", stdout=out)
+
+        mock_gen.assert_called_once_with(2025, 6)
+        assert "generated successfully" in out.getvalue()
+
+    @patch(
+        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
+    )
+    def test_dry_run_does_not_generate(self, mock_gen):
+        out = StringIO()
+        call_command(self.CMD, "--year=2025", "--month=7", "--dry-run", stdout=out)
+
+        mock_gen.assert_not_called()
+        assert "dry-run" in out.getvalue()
+
+    @patch(
+        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
+    )
+    def test_error_during_generation_exits_with_code_1(self, mock_gen):
+        mock_gen.side_effect = Exception("Google Sheets unavailable")
+
+        err = StringIO()
+        with pytest.raises(SystemExit) as exc_info:
+            call_command(self.CMD, "--year=2025", "--month=8", stderr=err)
+
+        assert exc_info.value.code == 1
+        assert "Error" in err.getvalue()
+
+    def test_invalid_month_exits_with_code_1(self):
+        err = StringIO()
+        with pytest.raises(SystemExit) as exc_info:
+            call_command(self.CMD, "--year=2025", "--month=13", stderr=err)
+
+        assert exc_info.value.code == 1
+        assert "Invalid month" in err.getvalue()
+
+    @patch(
+        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
+    )
+    def test_zero_month_exits_with_code_1(self, mock_gen):
+        err = StringIO()
+        with pytest.raises(SystemExit) as exc_info:
+            call_command(self.CMD, "--year=2025", "--month=0", stderr=err)
+
+        assert exc_info.value.code == 1
+        mock_gen.assert_not_called()
+
+    @patch(
+        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
+    )
+    @patch("trantrac.management.commands.generate_monthly_report.date")
+    def test_january_auto_detects_december_previous_year(self, mock_date, mock_gen):
+        """When run in January, should auto-generate for December of previous year"""
+        mock_date.today.return_value = date(2026, 1, 1)
+        mock_report = MagicMock()
+        mock_report.total_income = Decimal("0")
+        mock_report.total_expenses = Decimal("0")
+        mock_report.balance = Decimal("0")
+        mock_gen.return_value = mock_report
+
+        call_command(self.CMD)
+
+        mock_gen.assert_called_once_with(2025, 12)
+
+    @patch(
+        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
+    )
+    def test_only_year_provided_uses_previous_month(self, mock_gen):
+        """When only --year is given, month defaults to previous month of that year context"""
+        mock_report = MagicMock()
+        mock_report.total_income = Decimal("0")
+        mock_report.total_expenses = Decimal("0")
+        mock_report.balance = Decimal("0")
+        mock_gen.return_value = mock_report
+
+        # Only --month provided, year should auto-detect
+        with patch(
+            "trantrac.management.commands.generate_monthly_report.date"
+        ) as mock_date:
+            mock_date.today.return_value = date(2025, 6, 15)
+            call_command(self.CMD, "--month=3")
+            mock_gen.assert_called_once_with(2025, 3)
