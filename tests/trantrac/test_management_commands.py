@@ -149,9 +149,7 @@ class TestGenerateMonthlyReportCommand:
         report.save()
         return report
 
-    @patch(
-        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
-    )
+    @patch("trantrac.pdf_generator.generate_monthly_report")
     def test_generates_report_for_explicit_month(self, mock_gen):
         mock_report = MagicMock()
         mock_report.total_income = Decimal("500")
@@ -165,9 +163,7 @@ class TestGenerateMonthlyReportCommand:
         mock_gen.assert_called_once_with(2025, 3)
         assert "generated successfully" in out.getvalue()
 
-    @patch(
-        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
-    )
+    @patch("trantrac.pdf_generator.generate_monthly_report")
     @patch("trantrac.management.commands.generate_monthly_report.date")
     def test_defaults_to_previous_month(self, mock_date, mock_gen):
         mock_date.today.return_value = date(2025, 4, 1)
@@ -182,9 +178,7 @@ class TestGenerateMonthlyReportCommand:
 
         mock_gen.assert_called_once_with(2025, 3)
 
-    @patch(
-        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
-    )
+    @patch("trantrac.pdf_generator.generate_monthly_report")
     def test_skips_when_no_transactions(self, mock_gen):
         mock_gen.return_value = None
 
@@ -211,9 +205,7 @@ class TestGenerateMonthlyReportCommand:
         assert exc_info.value.code == 2
         assert "already exists" in out.getvalue()
 
-    @patch(
-        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
-    )
+    @patch("trantrac.pdf_generator.generate_monthly_report")
     def test_force_regenerates_existing_report(self, mock_gen):
         from trantrac.models import MonthlyReport
 
@@ -234,9 +226,7 @@ class TestGenerateMonthlyReportCommand:
         mock_gen.assert_called_once_with(2025, 6)
         assert "generated successfully" in out.getvalue()
 
-    @patch(
-        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
-    )
+    @patch("trantrac.pdf_generator.generate_monthly_report")
     def test_dry_run_does_not_generate(self, mock_gen):
         out = StringIO()
         call_command(self.CMD, "--year=2025", "--month=7", "--dry-run", stdout=out)
@@ -244,9 +234,7 @@ class TestGenerateMonthlyReportCommand:
         mock_gen.assert_not_called()
         assert "dry-run" in out.getvalue()
 
-    @patch(
-        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
-    )
+    @patch("trantrac.pdf_generator.generate_monthly_report")
     def test_error_during_generation_exits_with_code_1(self, mock_gen):
         mock_gen.side_effect = Exception("Google Sheets unavailable")
 
@@ -265,9 +253,7 @@ class TestGenerateMonthlyReportCommand:
         assert exc_info.value.code == 1
         assert "Invalid month" in err.getvalue()
 
-    @patch(
-        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
-    )
+    @patch("trantrac.pdf_generator.generate_monthly_report")
     def test_zero_month_exits_with_code_1(self, mock_gen):
         err = StringIO()
         with pytest.raises(SystemExit) as exc_info:
@@ -276,9 +262,7 @@ class TestGenerateMonthlyReportCommand:
         assert exc_info.value.code == 1
         mock_gen.assert_not_called()
 
-    @patch(
-        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
-    )
+    @patch("trantrac.pdf_generator.generate_monthly_report")
     @patch("trantrac.management.commands.generate_monthly_report.date")
     def test_january_auto_detects_december_previous_year(self, mock_date, mock_gen):
         """When run in January, should auto-generate for December of previous year"""
@@ -293,9 +277,7 @@ class TestGenerateMonthlyReportCommand:
 
         mock_gen.assert_called_once_with(2025, 12)
 
-    @patch(
-        "trantrac.management.commands.generate_monthly_report.generate_monthly_report"
-    )
+    @patch("trantrac.pdf_generator.generate_monthly_report")
     def test_only_year_provided_uses_previous_month(self, mock_gen):
         """When only --year is given, month defaults to previous month of that year context"""
         mock_report = MagicMock()

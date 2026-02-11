@@ -34,6 +34,11 @@ local:
 runbot:
     uv run python manage.py runbot
 
+# Generate monthly PDF  (defaults to previous month)
+[group: 'dev']
+report *args:
+    DYLD_LIBRARY_PATH=/opt/homebrew/lib uv run python manage.py generate_monthly_report {{args}}
+
 # ============================================================================
 # Database
 # ============================================================================

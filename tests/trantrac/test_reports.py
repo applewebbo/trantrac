@@ -28,8 +28,19 @@ class TestParseItalianDate:
         assert result.month == 12
         assert result.year == 2024
 
-    def test_invalid_date_format(self):
-        assert parse_italian_date("2025-01-15") is None
+    def test_iso_format(self):
+        result = parse_italian_date("2025-01-15")
+        assert result is not None
+        assert result.day == 15
+        assert result.month == 1
+        assert result.year == 2025
+
+    def test_iso_format_with_spaces(self):
+        result = parse_italian_date("  2024-12-01  ")
+        assert result is not None
+        assert result.day == 1
+        assert result.month == 12
+        assert result.year == 2024
 
     def test_invalid_date_values(self):
         assert parse_italian_date("32/13/2025") is None
@@ -42,6 +53,22 @@ class TestParseItalianDate:
 
     def test_missing_parts(self):
         assert parse_italian_date("01/01") is None
+
+    def test_two_digit_year(self):
+        """ENTRATE sheet uses dd/mm/yy format"""
+        result = parse_italian_date("01/01/26")
+        assert result is not None
+        assert result.year == 2026
+        assert result.month == 1
+        assert result.day == 1
+
+    def test_two_digit_year_december(self):
+        result = parse_italian_date("30/01/26")
+        assert result is not None
+        assert result.year == 2026
+
+    def test_unknown_format(self):
+        assert parse_italian_date("15-01-2025") is None
 
 
 class TestParseItalianAmount:
@@ -65,6 +92,16 @@ class TestParseItalianAmount:
 
     def test_large_amount(self):
         assert parse_italian_amount("10.000,00") == Decimal("10000.00")
+
+    def test_euro_symbol_prefix(self):
+        """Google Sheets returns formatted amounts with € symbol"""
+        assert parse_italian_amount("€ 1,54") == Decimal("1.54")
+
+    def test_euro_symbol_no_space(self):
+        assert parse_italian_amount("€1,54") == Decimal("1.54")
+
+    def test_euro_symbol_with_thousands(self):
+        assert parse_italian_amount("€ 1.234,56") == Decimal("1234.56")
 
 
 class TestFilterByMonth:
@@ -104,6 +141,26 @@ class TestFilterByMonth:
     def test_different_year(self):
         rows = [["Enrico", "15/01/2024", "100,00"]]
         assert filter_by_month(rows, 2025, 1, date_col_idx=1) == []
+
+    def test_filters_iso_format_dates(self):
+        """Dates saved by the web form use ISO format YYYY-MM-DD"""
+        rows = [
+            ["Enrico", "2025-01-15", "100,00", "desc"],
+            ["Enrico", "2025-02-10", "200,00", "desc"],
+            ["Viviana", "2025-01-20", "300,00", "desc"],
+        ]
+        result = filter_by_month(rows, 2025, 1, date_col_idx=1)
+        assert len(result) == 2
+
+    def test_mixed_date_formats(self):
+        """Sheet may contain both ISO (web form) and Italian (CSV) dates"""
+        rows = [
+            ["Enrico", "2025-01-15", "100,00", "desc"],
+            ["Viviana", "20/01/2025", "200,00", "desc"],
+            ["Enrico", "10/02/2025", "300,00", "desc"],
+        ]
+        result = filter_by_month(rows, 2025, 1, date_col_idx=1)
+        assert len(result) == 2
 
 
 class TestAggregateByField:
@@ -240,7 +297,9 @@ class TestGetMonthlyReportData:
         assert result["count_expenses"] == 1
         assert "Enrico" in result["income_by_user"]
         assert "Alimentari" in result["expenses_by_category"]
-        assert "Enrico" in result["expenses_by_user"]
+        assert (
+            "Comune" in result["expenses_by_user"]
+        )  # col 6 = "Comune" for CSV imports
 
     @patch("trantrac.reports.fetch_sheet_transactions")
     def test_filters_other_months(self, mock_fetch):
@@ -287,3 +346,42 @@ class TestGetMonthlyReportData:
         result = get_monthly_report_data(2025, 1)
         assert result is not None
         assert result["income_by_user"] == {}
+
+    @patch("trantrac.reports.fetch_sheet_transactions")
+    def test_iso_dates_from_web_form(self, mock_fetch):
+        """Expenses added via web form use YYYY-MM-DD dates; col 6 is the account owner"""
+
+        def side_effect(sheet_name):
+            if sheet_name == "ENTRATE":
+                return []
+            return [
+                [
+                    "Enrico",
+                    "2025-01-10",
+                    "150,00",
+                    "desc",
+                    "Alimentari",
+                    "sub",
+                    "Enrico",
+                    "ID1",
+                ],
+                [
+                    "Viviana",
+                    "2025-01-20",
+                    "80,00",
+                    "desc",
+                    "Trasporti",
+                    "sub",
+                    "Viviana",
+                    "ID2",
+                ],
+            ]
+
+        mock_fetch.side_effect = side_effect
+        result = get_monthly_report_data(2025, 1)
+        assert result is not None
+        assert result["total_expenses"] == Decimal("230.00")
+        assert "Enrico" in result["expenses_by_user"]
+        assert "Viviana" in result["expenses_by_user"]
+        assert result["expenses_by_user"]["Enrico"] == Decimal("150.00")
+        assert result["expenses_by_user"]["Viviana"] == Decimal("80.00")

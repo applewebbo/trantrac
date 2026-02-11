@@ -207,6 +207,9 @@ cython_debug/
 staticfiles/
 static/css/tailwind.css
 .django_tailwind_cli/
+
+# MEDIA (user uploads and generated files)
+media/
 .claude/plans/
 .claude/settings.local.json
 .playwright-mcp/

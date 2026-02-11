@@ -5,7 +5,6 @@ from datetime import date
 from django.core.management.base import BaseCommand
 
 from trantrac.models import MonthlyReport
-from trantrac.pdf_generator import generate_monthly_report
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +75,8 @@ class Command(BaseCommand):
             )
             logger.info("Report for %s/%s already exists, skipping", month, year)
             sys.exit(2)
+
+        from trantrac.pdf_generator import generate_monthly_report
 
         logger.info("Generating report for %s/%s", month, year)
         try:
