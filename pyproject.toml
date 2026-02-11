@@ -98,5 +98,22 @@ python_files = ["test_*.py"]
 python_functions = ["test_*"]
 testpaths = ["tests"]
 
+[tool.ty.environment]
+python-version = "3.14"
+
+[tool.ty.rules]
+missing-argument = "warn"
+possibly-unbound-attribute = "ignore"
+unknown-argument = "warn"
+unresolved-attribute = "warn"
+
+[tool.ty.src]
+exclude = [
+  "**/migrations/**",
+  "manage.py",
+  "**/settings/**",
+  "core/settings.py"
+]
+
 [tool.uv]
 python-preference = "only-managed"
