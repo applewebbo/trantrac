@@ -7,7 +7,44 @@
 <div class="container px-4 my-2 mx-auto max-w-screen-sm sm:my-8">
   <h1 class="mb-6 text-2xl font-semibold">Report Mensili</h1>
 
+  <!-- Form selettore mese/anno -->
+  <div class="mb-8 card bg-base-200">
+    <div class="card-body">
+      <h2 class="text-base card-title">Scarica un report</h2>
+      <form method="post" action="{% url 'reports_list' %}">
+        {% csrf_token %}
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
+          <div class="flex-1 form-control">
+            <label class="label" for="id_month">
+              <span class="label-text">Mese</span>
+            </label>
+            <select name="month" id="id_month" class="w-full select select-bordered">
+              <option value="">-- Seleziona mese --</option>
+              {% for num, name in months.items %}
+                <option value="{{ num }}">{{ name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="flex-1 form-control">
+            <label class="label" for="id_year">
+              <span class="label-text">Anno</span>
+            </label>
+            <select name="year" id="id_year" class="w-full select select-bordered">
+              <option value="">-- Seleziona anno --</option>
+              {% for year in available_years %}
+                <option value="{{ year }}">{{ year }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Scarica PDF</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Lista report disponibili -->
   {% if reports %}
+    <h2 class="mb-3 text-lg font-medium">Report disponibili</h2>
     <div class="overflow-x-auto">
       <table class="table w-full table-zebra">
         <thead>
@@ -31,9 +68,9 @@
             <td class="text-right text-error">€{{ report.total_expenses|floatformat:2 }}</td>
             <td class="font-medium text-right">€{{ report.balance|floatformat:2 }}</td>
             <td class="text-right">
-              <a href="{% url 'download_report' report.year report.month %}"
+              <a href="{% url 'download_report' report.download_uuid %}"
                  class="btn btn-sm btn-primary">
-                Scarica PDF
+                Scarica
               </a>
             </td>
           </tr>

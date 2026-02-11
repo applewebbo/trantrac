@@ -571,6 +571,16 @@ class TestReportsListView(TestCase):
         assert response.status_code == 200
         assert response.context["reports"].count() == 2
 
+    def test_context_includes_months_and_years(self):
+        MonthlyReport.objects.create(year=2025, month=1)
+        MonthlyReport.objects.create(year=2024, month=6)
+        with self.login(username=self.user.email, password="password"):
+            response = self.get("reports_list")
+        assert "months" in response.context
+        assert "available_years" in response.context
+        assert 2025 in response.context["available_years"]
+        assert 2024 in response.context["available_years"]
+
     def test_reports_ordered_by_year_month_desc(self):
         MonthlyReport.objects.create(year=2025, month=1)
         MonthlyReport.objects.create(year=2025, month=3)
@@ -582,6 +592,50 @@ class TestReportsListView(TestCase):
         assert reports[1].month == 1
         assert reports[2].year == 2024
 
+    def test_post_redirects_to_download_when_report_exists(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            report_dir = tmp_path / "reports" / "2025"
+            report_dir.mkdir(parents=True)
+            (report_dir / "test.pdf").write_bytes(b"%PDF-1.4")
+
+            with override_settings(MEDIA_ROOT=tmp_path):
+                report = MonthlyReport.objects.create(year=2025, month=7)
+                report.pdf_file = "reports/2025/test.pdf"
+                report.save()
+
+                with self.login(username=self.user.email, password="password"):
+                    response = self.post(
+                        "reports_list", data={"year": 2025, "month": 7}
+                    )
+
+        assert response.status_code == 302
+        assert str(report.download_uuid) in response["Location"]
+
+    def test_post_shows_error_when_report_not_found(self):
+        with self.login(username=self.user.email, password="password"):
+            response = self.post("reports_list", data={"year": 2099, "month": 1})
+        assert response.status_code == 200
+        messages_list = list(response.context["messages"])
+        assert any("Nessun report" in str(m) for m in messages_list)
+
+    def test_post_shows_error_when_no_pdf_file(self):
+        MonthlyReport.objects.create(year=2025, month=8)
+        with self.login(username=self.user.email, password="password"):
+            response = self.post("reports_list", data={"year": 2025, "month": 8})
+        assert response.status_code == 200
+        messages_list = list(response.context["messages"])
+        assert any("non ancora disponibile" in str(m) for m in messages_list)
+
+    def test_post_shows_error_for_invalid_input(self):
+        with self.login(username=self.user.email, password="password"):
+            response = self.post(
+                "reports_list", data={"year": "notanumber", "month": "x"}
+            )
+        assert response.status_code == 200
+        messages_list = list(response.context["messages"])
+        assert any("Nessun report" in str(m) for m in messages_list)
+
 
 @pytest.mark.django_db
 class TestDownloadReportView(TestCase):
@@ -589,23 +643,30 @@ class TestDownloadReportView(TestCase):
         self.user = self.make_user("test@example.com")
 
     def test_requires_login(self):
+        import uuid
+
+        fake_uuid = uuid.uuid4()
         response = self.client.get(
-            reverse("download_report", kwargs={"year": 2025, "month": 1})
+            reverse("download_report", kwargs={"download_uuid": fake_uuid})
         )
         assert response.status_code == 302
 
-    def test_returns_404_for_nonexistent_report(self):
+    def test_returns_404_for_nonexistent_uuid(self):
+        import uuid
+
         with self.login(username=self.user.email, password="password"):
             response = self.client.get(
-                reverse("download_report", kwargs={"year": 2099, "month": 1})
+                reverse("download_report", kwargs={"download_uuid": uuid.uuid4()})
             )
         assert response.status_code == 404
 
     def test_returns_404_when_no_pdf_file(self):
-        MonthlyReport.objects.create(year=2025, month=4)
+        report = MonthlyReport.objects.create(year=2025, month=4)
         with self.login(username=self.user.email, password="password"):
             response = self.client.get(
-                reverse("download_report", kwargs={"year": 2025, "month": 4})
+                reverse(
+                    "download_report", kwargs={"download_uuid": report.download_uuid}
+                )
             )
         assert response.status_code == 404
 
@@ -624,7 +685,10 @@ class TestDownloadReportView(TestCase):
 
                 with self.login(username=self.user.email, password="password"):
                     response = self.client.get(
-                        reverse("download_report", kwargs={"year": 2025, "month": 5})
+                        reverse(
+                            "download_report",
+                            kwargs={"download_uuid": report.download_uuid},
+                        )
                     )
 
             assert response.status_code == 200
@@ -647,7 +711,10 @@ class TestDownloadReportView(TestCase):
 
                 with self.login(username=self.user.email, password="password"):
                     response = self.client.get(
-                        reverse("download_report", kwargs={"year": 2025, "month": 6})
+                        reverse(
+                            "download_report",
+                            kwargs={"download_uuid": report.download_uuid},
+                        )
                     )
 
             assert "report_2025_06.pdf" in response["Content-Disposition"]

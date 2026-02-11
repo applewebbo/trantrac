@@ -11,7 +11,7 @@ urlpatterns = [
     path("refresh-categories/", views.refresh_categories, name="refresh_categories"),
     path("reports/", views.reports_list, name="reports_list"),
     path(
-        "reports/<int:year>/<int:month>/download/",
+        "reports/download/<uuid:download_uuid>/",
         views.download_report,
         name="download_report",
     ),

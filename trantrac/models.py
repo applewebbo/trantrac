@@ -198,6 +198,7 @@ def report_upload_path(instance, filename):
 class MonthlyReport(models.Model):
     year = models.IntegerField()
     month = models.IntegerField()
+    download_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     pdf_file = models.FileField(upload_to=report_upload_path, blank=True)
     generated_at = models.DateTimeField(auto_now_add=True)
     sheets_last_modified = models.DateTimeField(null=True, blank=True)

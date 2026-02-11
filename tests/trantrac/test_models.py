@@ -344,3 +344,19 @@ class TestMonthlyReportModel(TestCase):
         # Ensure UUID is used (different calls produce different paths)
         path2 = report_upload_path(report, "ignored.pdf")
         assert path != path2
+
+    def test_download_uuid_is_unique(self):
+        """Test that each report gets a unique download_uuid"""
+        import uuid
+
+        report1 = MonthlyReport.objects.create(year=2025, month=9)
+        report2 = MonthlyReport.objects.create(year=2025, month=10)
+        assert report1.download_uuid != report2.download_uuid
+        assert isinstance(report1.download_uuid, uuid.UUID)
+
+    def test_month_name_property(self):
+        """Test month_name returns Italian name"""
+        report = MonthlyReport(year=2025, month=1)
+        assert report.month_name == "Gennaio"
+        report.month = 12
+        assert report.month_name == "Dicembre"

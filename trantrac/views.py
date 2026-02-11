@@ -233,17 +233,45 @@ def refresh_categories(request):
 @login_required
 def reports_list(request):
     reports = MonthlyReport.objects.order_by("-year", "-month")
-    return TemplateResponse(request, "trantrac/reports_list.html", {"reports": reports})
+    available_years = sorted(
+        set(reports.values_list("year", flat=True)),
+        reverse=True,
+    )
+    context = {
+        "reports": reports,
+        "months": MonthlyReport.MONTH_NAMES,
+        "available_years": available_years,
+    }
+    if request.method == "POST":
+        year = request.POST.get("year")
+        month = request.POST.get("month")
+        try:
+            report = MonthlyReport.objects.get(year=int(year), month=int(month))
+            if not report.pdf_file:
+                messages.add_message(
+                    request,
+                    messages.ERROR,
+                    "PDF non ancora disponibile per questo periodo.",
+                )
+                return TemplateResponse(request, "trantrac/reports_list.html", context)
+            return redirect("download_report", download_uuid=report.download_uuid)
+        except MonthlyReport.DoesNotExist, TypeError, ValueError:
+            messages.add_message(
+                request,
+                messages.ERROR,
+                "Nessun report disponibile per il periodo selezionato.",
+            )
+    return TemplateResponse(request, "trantrac/reports_list.html", context)
 
 
 @login_required
-def download_report(request, year, month):
-    report = get_object_or_404(MonthlyReport, year=year, month=month)
+def download_report(request, download_uuid):
+    report = get_object_or_404(MonthlyReport, download_uuid=download_uuid)
     if not report.pdf_file:
         raise Http404
     return FileResponse(
         report.pdf_file.open("rb"),
         content_type="application/pdf",
         as_attachment=True,
-        filename=f"report_{year}_{month:02d}.pdf",
+        filename=f"report_{report.year}_{report.month:02d}.pdf",
     )
