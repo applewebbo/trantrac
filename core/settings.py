@@ -84,6 +84,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "trantrac.context_processors.crispy_css_container",
+                "trantrac.context_processors.app_version",
             ],
             "builtins": [
                 "heroicons.templatetags.heroicons",
@@ -239,6 +240,9 @@ ANYMAIL = {
 if env("PRODUCTION"):  # pragma: no cover
     CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS").split(",")
     MIDDLEWARE.insert(2, "whitenoise.middleware.WhiteNoiseMiddleware")
+
+# Application version (must match the current git release tag)
+APP_VERSION = "2026.3"
 
 # DaisyUI configuration (requires tailwind-cli-extra)
 TAILWIND_CLI_SRC_REPO = "dobicinaitis/tailwind-cli-extra"
