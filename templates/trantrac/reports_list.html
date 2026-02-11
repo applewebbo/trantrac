@@ -8,7 +8,7 @@
   <h1 class="mb-6 text-2xl font-semibold">Report Mensili</h1>
 
   <!-- Form selettore mese/anno -->
-  <div class="mb-8 card bg-base-200">
+  <div class="mb-8 border shadow-sm card bg-base-100 border-base-200">
     <div class="card-body">
       <h2 class="text-base card-title">Scarica un report</h2>
       <form method="post" action="{% url 'reports_list' %}">
@@ -36,7 +36,9 @@
               {% endfor %}
             </select>
           </div>
-          <button type="submit" class="btn btn-primary">Scarica PDF</button>
+          <div class="sm:pb-0 form-control">
+            <button type="submit" class="w-full sm:w-auto btn btn-primary">Scarica PDF</button>
+          </div>
         </div>
       </form>
     </div>
@@ -79,7 +81,10 @@
       </table>
     </div>
   {% else %}
-    <div class="alert alert-info">
+    <div class="alert">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-5 h-5 opacity-60 stroke-current shrink-0">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
       <span>Nessun report disponibile. I report vengono generati automaticamente il 1° di ogni mese.</span>
     </div>
   {% endif %}
