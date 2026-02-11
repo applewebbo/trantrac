@@ -101,13 +101,33 @@ Custom skills available for common Django workflows. Use these for automated qua
 **What it does:**
 1. Validates release branch and runs all checks
 2. Generates categorized release notes from commits
-3. Merges to main with `--ff-only` (linear history)
-4. Creates tag and pushes to origin
-5. Creates Codeberg release with auto-generated notes
-6. Labels closed issues with release version
-7. Optionally creates next release branch
+3. Fetches issue details to enrich release descriptions
+4. Merges to main with `--ff-only` (linear history)
+5. Creates tag and pushes to origin
+6. Creates Codeberg release with detailed, human-readable release notes
+7. Labels closed issues with release version
+8. Optionally creates next release branch
 
 **Critical:** Ensures linear history on main with fast-forward only merges
+
+### `/deploy` - Deploy to Production (Caprover)
+**Use when:** Ready to deploy to production after a release or hotfix
+
+**What it does:**
+1. Validates branch (warns if not on `main`), clean working tree and remote sync
+2. Runs quick health check (tests, lint, Django check, migrations)
+3. Asks which deploy mode to use:
+   - `--default`: deploy current branch directly (fast, no prompts)
+   - interactive: choose app/branch from Caprover CLI
+4. Shows confirmation summary before deploying
+5. Runs `caprover deploy` streaming output in real time
+6. Verifies the app is up with an HTTP health check
+7. Displays deploy summary
+
+**App:** `trantrac` on Caprover
+**entrypoint.sh:** `migrate → tailwind build → collectstatic → granian`
+
+**Note:** Caprover keeps the previous image on failure — no downtime on broken deploys
 
 ### `/deps-update` - Safe Dependency Updates
 **Use when:** Weekly maintenance, security patches, package upgrades
@@ -177,10 +197,11 @@ Custom skills available for common Django workflows. Use these for automated qua
 # 2. If approved, run full release workflow
 /release
 
-# 3. Monitor deployment
+# 3. Deploy to production
+/deploy
 ```
 
-### Pre-Deployment
+### Pre-Deployment (manual checklist)
 ```bash
 # 1. Backup database first
 /db-backup
@@ -188,8 +209,8 @@ Custom skills available for common Django workflows. Use these for automated qua
 # 2. Run comprehensive pre-deployment checks
 /pre-deploy
 
-# 3. If all checks pass, proceed with deployment
-# Follow deployment commands provided by skill
+# 3. Deploy to production
+/deploy
 ```
 
 ### Weekly Maintenance
@@ -229,5 +250,6 @@ Custom skills available for common Django workflows. Use these for automated qua
 4. **Backup before risk**: Use `/db-backup` before any potentially destructive operation
 5. **Update deps weekly**: Use `/deps-update` to keep dependencies secure and current
 6. **Clean monthly**: Use `/cleanup` to keep the project lean and the database optimized
-7. **Trust the automation**: Skills handle edge cases and provide comprehensive checks
-8. **Follow the prompts**: Skills ask for confirmation when needed - review carefully
+7. **Deploy with `/deploy`**: Never run `caprover deploy` manually — the skill validates everything first
+8. **Trust the automation**: Skills handle edge cases and provide comprehensive checks
+9. **Follow the prompts**: Skills ask for confirmation when needed - review carefully
