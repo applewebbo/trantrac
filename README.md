@@ -15,6 +15,7 @@ TranTrac helps families track their financial transactions by providing a simple
 - **Category Management**: Organize transactions with categories and subcategories
 - **Account Tracking**: Track multiple bank accounts
 - **Email Reminders**: Monthly email notifications for transaction review
+- **Monthly PDF Reports**: Automatic report generation via management command ([Cron Setup](docs/cron-setup.md))
 - **Modern UI**: Built with HTMX and Tailwind CSS for a responsive, app-like experience
 
 ## Tech Stack
