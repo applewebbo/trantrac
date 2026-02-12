@@ -1,11 +1,11 @@
 ---
 # trantrac-qnlj
 title: 'UX: add loading states and HTMX feedback'
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-02-11T20:48:10Z
-updated_at: 2026-02-11T20:48:10Z
+updated_at: 2026-02-12T07:15:19Z
 ---
 
 ## Plan
@@ -30,3 +30,11 @@ updated_at: 2026-02-11T20:48:10Z
 - [ ] Add htmx-indicator to HTMX elements
 - [ ] Add aria-live to dynamic regions
 - [ ] Test on mobile devices
+
+## Summary of Changes
+
+- Added hx-indicator (#subcategory-loading) to category Div in forms.py for subcategory load feedback
+- Added DaisyUI loading spinner next to subcategory field (htmx-indicator class)
+- Added hx-disabled-elt to CSV upload form and transaction form (disables submit during request)
+- Added aria-live=polite + aria-atomic to messages container in base.html
+- Added aria-live=polite + aria-atomic to #transaction_form in index.html

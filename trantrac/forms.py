@@ -211,6 +211,7 @@ class TransactionForm(forms.Form):
                     hx_get=reverse_lazy("load_subcategories"),
                     hx_trigger="change from:#id_category",
                     hx_target="#id_subcategory",
+                    hx_indicator="#subcategory-loading",
                     hx_vals='js:{"category": event.target.value}',
                 ),
                 Div(
@@ -218,6 +219,9 @@ class TransactionForm(forms.Form):
                         "subcategory",
                         css_class="bg-base-200 dark:bg-base-300",
                         **{"x-bind:disabled": "!hasCategory"},
+                    ),
+                    HTML(
+                        '<span id="subcategory-loading" class="loading loading-spinner loading-sm htmx-indicator text-primary"></span>'
                     ),
                     HTML(HTML_ADD_SUBCATEGORY_BUTTON),
                     css_class="flex gap-x-6 gap-y-2 items-center",

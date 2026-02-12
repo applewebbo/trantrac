@@ -23,7 +23,7 @@
         {% block content %}
         {% endblock content %}
         <!-- Messages -->
-        <div id="messages" class="z-3" hx-boost="true">{% include 'includes/messages.html' %}</div>
+        <div id="messages" class="z-3" aria-live="polite" aria-atomic="false" hx-boost="true">{% include 'includes/messages.html' %}</div>
         <!-- Modal -->
         {% include 'includes/modal.html' %}
         <!-- HTMX -->
