@@ -1,0 +1,68 @@
+<!-- Quick Categories Section -->
+<div class="p-4 mb-4 rounded-lg border-2 border-gray-100 dark:border-base-300 dark:bg-base-300"
+     x-data="{
+         activeTab: ({{ has_category_data|yesno:'true,false' }}) ? 'recent' : 'all',
+         selectCategory(categoryId, subcategoryId) {
+             const categorySelect = document.getElementById('id_category');
+             const subcategorySelect = document.getElementById('id_subcategory');
+
+             categorySelect.value = categoryId;
+             categorySelect.dispatchEvent(new Event('change'));
+
+             setTimeout(() => {
+                 subcategorySelect.value = subcategoryId;
+             }, 200);
+         }
+     }">
+    <!-- DaisyUI Tabs -->
+    <div role="tablist" class="tabs tabs-border">
+        <a role="tab"
+           class="tab"
+           :class="{ 'tab-active': activeTab === 'recent' }"
+           @click="activeTab = 'recent'">
+            Recenti
+        </a>
+        <a role="tab"
+           class="tab"
+           :class="{ 'tab-active': activeTab === 'most-used' }"
+           @click="activeTab = 'most-used'">
+            Più usate
+        </a>
+        <a role="tab"
+           class="tab"
+           :class="{ 'tab-active': activeTab === 'all' }"
+           @click="activeTab = 'all'">
+            Scegli la categoria
+        </a>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="mt-4">
+        <!-- Recent Categories -->
+        <div x-show="activeTab === 'recent'" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {% for item in recent_categories %}
+            <button type="button"
+                    class="btn btn-sm btn-primary"
+                    @click="selectCategory({{ item.category }}, {{ item.subcategory }})">
+                {{ item.subcategory__name }}
+            </button>
+            {% empty %}
+            <p class="col-span-full text-sm text-gray-500">Nessuna categoria recente</p>
+            {% endfor %}
+        </div>
+
+        <!-- Most Used Categories -->
+        <div x-show="activeTab === 'most-used'" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {% for item in most_used_categories %}
+            <button type="button"
+                    class="btn btn-sm btn-primary"
+                    @click="selectCategory({{ item.category }}, {{ item.subcategory }})">
+                {{ item.subcategory__name }}
+            </button>
+            {% empty %}
+            <p class="col-span-full text-sm text-gray-500">Nessuna categoria usata</p>
+            {% endfor %}
+        </div>
+
+        <!-- All Categories (Standard Form) -->
+        <div x-show="activeTab === 'all'">

@@ -1,0 +1,9 @@
+<button class='btn btn-sm btn-primary'
+        x-bind:class="{ 'btn-disabled': !hasCategory }"
+        hx-get="{% url 'add_subcategory' %}"
+        hx-target="#modal-content"
+        hx-swap="innerHTML"
+        @click="$el.setAttribute('hx-vals', JSON.stringify({category: $refs.categorySelect.value}))"
+        onclick="window.modal.showModal()">
+    {% heroicon_mini 'plus' %}
+</button>

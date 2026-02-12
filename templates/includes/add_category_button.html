@@ -1,0 +1,7 @@
+<button hx-get="{% url 'add_category' %}"
+        hx-target="#modal-content"
+        hx-swap="innerHTML"
+        onclick="window.modal.showModal()"
+        class='btn btn-sm btn-primary'>
+    {% heroicon_mini 'plus' %}
+</button>

@@ -7,103 +7,10 @@ from django.urls import reverse_lazy
 
 from trantrac.models import Account, Category, Subcategory
 
-HTML_ADD_BUTTON = """
-    <button hx-get="{% url 'add_category' %}"
-            hx-target="#modal-content"
-            hx-swap="innerHTML"
-            onclick="window.modal.showModal()"
-            class='btn btn-sm btn-primary'>
-        {% heroicon_mini 'plus' %}
-    </button>
-    """
-HTML_ADD_SUBCATEGORY_BUTTON = """
-    <button class='btn btn-sm btn-primary'
-            x-bind:class="{ 'btn-disabled': !hasCategory }"
-            hx-get="{% url 'add_subcategory' %}"
-            hx-target="#modal-content"
-            hx-swap="innerHTML"
-            @click="$el.setAttribute('hx-vals', JSON.stringify({category: $refs.categorySelect.value}))"
-            onclick="window.modal.showModal()">
-        {% heroicon_mini 'plus' %}
-    </button>
-"""
-
-HTML_QUICK_CATEGORIES_START = """
-<!-- Quick Categories Section -->
-<div class="mb-4 rounded-lg border-2 border-gray-100 dark:border-base-300  dark:bg-base-300 p-4"
-     x-data="{
-         activeTab: ({{ has_category_data|yesno:'true,false' }}) ? 'recent' : 'all',
-         selectCategory(categoryId, subcategoryId) {
-             const categorySelect = document.getElementById('id_category');
-             const subcategorySelect = document.getElementById('id_subcategory');
-
-             categorySelect.value = categoryId;
-             categorySelect.dispatchEvent(new Event('change'));
-
-             setTimeout(() => {
-                 subcategorySelect.value = subcategoryId;
-             }, 200);
-         }
-     }">
-    <!-- DaisyUI Tabs -->
-    <div role="tablist" class="tabs tabs-border">
-        <a role="tab"
-           class="tab"
-           :class="{ 'tab-active': activeTab === 'recent' }"
-           @click="activeTab = 'recent'">
-            Recenti
-        </a>
-        <a role="tab"
-           class="tab"
-           :class="{ 'tab-active': activeTab === 'most-used' }"
-           @click="activeTab = 'most-used'">
-            Più usate
-        </a>
-        <a role="tab"
-           class="tab"
-           :class="{ 'tab-active': activeTab === 'all' }"
-           @click="activeTab = 'all'">
-            Scegli la categoria
-        </a>
-    </div>
-
-    <!-- Tab Content -->
-    <div class="mt-4">
-        <!-- Recent Categories -->
-        <div x-show="activeTab === 'recent'" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {% for item in recent_categories %}
-            <button type="button"
-                    class="btn btn-sm btn-primary"
-                    @click="selectCategory({{ item.category }}, {{ item.subcategory }})">
-                {{ item.subcategory__name }}
-            </button>
-            {% empty %}
-            <p class="col-span-full text-sm text-gray-500">Nessuna categoria recente</p>
-            {% endfor %}
-        </div>
-
-        <!-- Most Used Categories -->
-        <div x-show="activeTab === 'most-used'" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {% for item in most_used_categories %}
-            <button type="button"
-                    class="btn btn-sm btn-primary"
-                    @click="selectCategory({{ item.category }}, {{ item.subcategory }})">
-                {{ item.subcategory__name }}
-            </button>
-            {% empty %}
-            <p class="col-span-full text-sm text-gray-500">Nessuna categoria usata</p>
-            {% endfor %}
-        </div>
-
-        <!-- All Categories (Standard Form) -->
-        <div x-show="activeTab === 'all'">
-"""
-
-HTML_QUICK_CATEGORIES_END = """
-        </div>
-    </div>
-</div>
-"""
+HTML_ADD_BUTTON = "{% include 'includes/add_category_button.html' %}"
+HTML_ADD_SUBCATEGORY_BUTTON = "{% include 'includes/add_subcategory_button.html' %}"
+HTML_QUICK_CATEGORIES_START = "{% include 'includes/quick_categories_start.html' %}"
+HTML_QUICK_CATEGORIES_END = "{% include 'includes/quick_categories_end.html' %}"
 
 
 class DateInput(forms.widgets.DateInput):
