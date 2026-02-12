@@ -6,6 +6,7 @@ from trantrac.models import (
     GoogleSheetsSettings,
     MonthlyReport,
     Subcategory,
+    UserMapping,
 )
 
 
@@ -56,6 +57,12 @@ class GoogleSheetsSettingsAdmin(admin.ModelAdmin):
 admin.site.register(Category)
 admin.site.register(Subcategory)
 admin.site.register(Account)
+
+
+@admin.register(UserMapping)
+class UserMappingAdmin(admin.ModelAdmin):
+    list_display = ("keyword", "display_name", "order")
+    ordering = ("order", "keyword")
 
 
 @admin.register(MonthlyReport)

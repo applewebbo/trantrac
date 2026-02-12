@@ -71,7 +71,12 @@ def save_to_sheet(values, sheet_name):
 def import_csv_to_sheet(csv_file, user):
     """Import CSV file to Google Sheets separating positive and negative transactions"""
     # Import here to avoid circular import
-    from trantrac.models import Category, Subcategory, save_category_and_sub_to_sheet
+    from trantrac.models import (
+        Category,
+        Subcategory,
+        UserMapping,
+        save_category_and_sub_to_sheet,
+    )
 
     REQUIRED_COLUMNS = {
         "Data operazione",
@@ -110,13 +115,13 @@ def import_csv_to_sheet(csv_file, user):
 
         description = row["Descrizione"]
         if importo_float >= 0:
-            # Determine user name based on description for positive transactions
-            if "VIVIANA" in description:
-                display_name = "Viviana"
-            elif "ENRICO" in description or "APPLE" in description:
-                display_name = "Enrico"
-            else:
-                display_name = "Altro"
+            # Determine user name based on configurable keyword mappings
+            description_upper = description.upper()
+            display_name = "Altro"
+            for mapping in UserMapping.objects.all():
+                if mapping.keyword.upper() in description_upper:
+                    display_name = mapping.display_name
+                    break
 
             transaction_row = [
                 display_name,

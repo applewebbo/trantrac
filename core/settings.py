@@ -238,8 +238,29 @@ ANYMAIL = {
 }
 
 if env("PRODUCTION"):  # pragma: no cover
+    from django.core.exceptions import ImproperlyConfigured
+
+    _REQUIRED_ENV_VARS = [
+        "SECRET_KEY",
+        "TELEGRAM_BOT_TOKEN",
+        "GOOGLE_SHEETS_SPREADSHEET_ID",
+        "MAILGUN_API_KEY",
+    ]
+    for _var in _REQUIRED_ENV_VARS:
+        if not os.environ.get(_var):
+            raise ImproperlyConfigured(
+                f"Required env var {_var!r} is not set in production."
+            )
+
     CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS").split(",")
     MIDDLEWARE.insert(2, "whitenoise.middleware.WhiteNoiseMiddleware")
+
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 # Application version (must match the current git release tag)
 APP_VERSION = "2026.3"

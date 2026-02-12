@@ -80,6 +80,35 @@ class Account(models.Model):
         verbose_name_plural = "conti bancari"
 
 
+class UserMapping(models.Model):
+    """Maps CSV description keywords to user display names for positive transactions."""
+
+    keyword = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Parola chiave",
+        help_text="Keyword cercata nella descrizione della transazione (case insensitive)",
+    )
+    display_name = models.CharField(
+        max_length=100,
+        verbose_name="Nome visualizzato",
+        help_text="Nome utente da mostrare nel foglio",
+    )
+    order = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name="Ordine",
+        help_text="Priorità di corrispondenza (valore più basso = verificato prima)",
+    )
+
+    class Meta:
+        verbose_name = "mappatura utente"
+        verbose_name_plural = "mappature utenti"
+        ordering = ["order", "keyword"]
+
+    def __str__(self):
+        return f"{self.keyword!r} → {self.display_name}"
+
+
 class CategoryUsage(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)

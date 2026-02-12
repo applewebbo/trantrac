@@ -292,9 +292,15 @@ class TestImportCsvToSheet(TestCase):
     @patch("trantrac.utils.save_to_sheet")
     @patch("trantrac.models.save_category_and_sub_to_sheet")
     def test_import_csv_user_name_detection(self, mock_save_cat, mock_save_sheet):
-        """Test CSV import detects user names in positive transactions"""
+        """Test CSV import detects user names via configurable UserMapping"""
+        from trantrac.models import UserMapping
+
         mock_save_cat.return_value = True
         mock_save_sheet.return_value = True
+
+        UserMapping.objects.create(keyword="VIVIANA", display_name="Viviana", order=0)
+        UserMapping.objects.create(keyword="ENRICO", display_name="Enrico", order=1)
+        UserMapping.objects.create(keyword="APPLE", display_name="Enrico", order=2)
 
         csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
 01/01/2025,+100.00,VIVIANA Income,Salary,,ABC123

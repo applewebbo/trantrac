@@ -103,7 +103,6 @@ python-version = "3.14"
 
 [tool.ty.rules]
 missing-argument = "warn"
-possibly-unbound-attribute = "ignore"
 unknown-argument = "warn"
 unresolved-attribute = "warn"
 

@@ -690,11 +690,13 @@ class TestDownloadReportView(TestCase):
                             kwargs={"download_uuid": report.download_uuid},
                         )
                     )
-
-            assert response.status_code == 200
-            assert response["Content-Type"] == "application/pdf"
-            assert "attachment" in response["Content-Disposition"]
-            assert "report_2025_05.pdf" in response["Content-Disposition"]
+                    try:
+                        assert response.status_code == 200
+                        assert response["Content-Type"] == "application/pdf"
+                        assert "attachment" in response["Content-Disposition"]
+                        assert "report_2025_05.pdf" in response["Content-Disposition"]
+                    finally:
+                        response.close()
 
     def test_download_filename_format(self):
         pdf_content = b"%PDF-1.4"
@@ -716,5 +718,7 @@ class TestDownloadReportView(TestCase):
                             kwargs={"download_uuid": report.download_uuid},
                         )
                     )
-
-            assert "report_2025_06.pdf" in response["Content-Disposition"]
+                    try:
+                        assert "report_2025_06.pdf" in response["Content-Disposition"]
+                    finally:
+                        response.close()
