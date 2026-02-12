@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 
 from tests.conftest import TestCase
@@ -143,6 +144,7 @@ class TestCategoryUsageModel(TestCase):
         indexes = [idx.fields for idx in CategoryUsage._meta.indexes]
         assert ["-created_at"] in indexes
         assert ["category", "subcategory"] in indexes
+        assert ["user", "-created_at"] in indexes
 
 
 @pytest.mark.django_db
@@ -296,6 +298,30 @@ class TestGoogleSheetsSettingsModel(TestCase):
             GoogleSheetsSettings._meta.verbose_name_plural
             == "Impostazioni Google Sheets"
         )
+
+    def test_get_settings_populates_cache(self):
+        """Test get_settings stores result in cache after DB lookup."""
+        cache.delete(GoogleSheetsSettings.CACHE_KEY)
+        assert cache.get(GoogleSheetsSettings.CACHE_KEY) is None
+        obj = GoogleSheetsSettings.get_settings()
+        cached = cache.get(GoogleSheetsSettings.CACHE_KEY)
+        assert cached is not None
+        assert cached.pk == obj.pk
+
+    def test_get_settings_returns_cached_value(self):
+        """Test get_settings returns cached value on subsequent calls."""
+        cache.delete(GoogleSheetsSettings.CACHE_KEY)
+        first = GoogleSheetsSettings.get_settings()
+        # Populate cache manually to prove the second call uses it
+        second = GoogleSheetsSettings.get_settings()
+        assert first.pk == second.pk
+
+    def test_save_invalidates_cache(self):
+        """Test saving GoogleSheetsSettings clears the cache."""
+        obj = GoogleSheetsSettings.get_settings()
+        assert cache.get(GoogleSheetsSettings.CACHE_KEY) is not None
+        obj.save()
+        assert cache.get(GoogleSheetsSettings.CACHE_KEY) is None
 
 
 @pytest.mark.django_db

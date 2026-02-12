@@ -1,8 +1,11 @@
 import uuid
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
@@ -39,7 +42,7 @@ def save_category_and_sub_to_sheet(values):
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, db_index=True)
 
     class Meta:
         verbose_name = "categoria"
@@ -50,7 +53,7 @@ class Category(models.Model):
 
 
 class Subcategory(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, db_index=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     skip_sheet_save = models.BooleanField(default=False)
 
@@ -122,6 +125,7 @@ class CategoryUsage(models.Model):
         indexes = [
             models.Index(fields=["-created_at"]),
             models.Index(fields=["category", "subcategory"]),
+            models.Index(fields=["user", "-created_at"]),
         ]
 
     def __str__(self):
@@ -178,9 +182,15 @@ class GoogleSheetsSettings(models.Model):
             raise ValidationError(msg)
         super().save(*args, **kwargs)
 
+    CACHE_KEY = "google_sheets_settings"
+    CACHE_TTL = 3600  # 1 hour
+
     @classmethod
     def get_settings(cls):
-        """Get or create the singleton settings instance"""
+        """Get or create the singleton settings instance, cached for 1 hour."""
+        cached = cache.get(cls.CACHE_KEY)
+        if cached is not None:
+            return cached
         obj, _created = cls.objects.get_or_create(
             pk=1,
             defaults={
@@ -201,6 +211,7 @@ class GoogleSheetsSettings(models.Model):
                 ),
             },
         )
+        cache.set(cls.CACHE_KEY, obj, cls.CACHE_TTL)
         return obj
 
     def get_credentials_dict(self):
@@ -217,6 +228,12 @@ class GoogleSheetsSettings(models.Model):
             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
             "client_x509_cert_url": self.client_x509_cert_url,
         }
+
+
+@receiver(post_save, sender=GoogleSheetsSettings)
+def invalidate_sheets_settings_cache(sender, **kwargs):
+    """Invalidate cached GoogleSheetsSettings when the model is saved."""
+    cache.delete(GoogleSheetsSettings.CACHE_KEY)
 
 
 def report_upload_path(instance, filename):
