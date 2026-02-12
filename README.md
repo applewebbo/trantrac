@@ -1,3 +1,6 @@
 # Family Finance Tracker to Google Sheets
 
-built with Django, HTMX, Tailwind, and Google Sheets API
+> **⚠️ This repository has been archived.**
+>
+> Development has moved to Codeberg:
+> **https://codeberg.org/webbografico/trantrac**
