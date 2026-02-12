@@ -1,11 +1,11 @@
 ---
 # trantrac-wwk8
 title: 'UX: add manual dark mode toggle'
-status: todo
+status: scrapped
 type: feature
 priority: low
 created_at: 2026-02-11T20:48:14Z
-updated_at: 2026-02-11T20:48:14Z
+updated_at: 2026-02-12T14:08:46Z
 ---
 
 ## Plan
@@ -31,3 +31,7 @@ updated_at: 2026-02-11T20:48:14Z
 - [ ] Handle system preference fallback
 - [ ] Test light/dark transitions
 - [ ] Ensure all components look correct in both themes
+
+## Reasons for Scrapping
+
+Decision to not implement this feature.

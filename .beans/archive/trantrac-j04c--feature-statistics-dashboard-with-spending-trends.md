@@ -1,11 +1,11 @@
 ---
 # trantrac-j04c
 title: 'Feature: statistics dashboard with spending trends'
-status: todo
+status: scrapped
 type: feature
 priority: normal
 created_at: 2026-02-11T20:48:22Z
-updated_at: 2026-02-11T20:48:22Z
+updated_at: 2026-02-12T14:08:46Z
 ---
 
 ## Plan
@@ -46,3 +46,7 @@ updated_at: 2026-02-11T20:48:22Z
 - [ ] Add navbar link
 - [ ] Add tests for stats functions
 - [ ] Add tests for dashboard view
+
+## Reasons for Scrapping
+
+Decision to not implement this feature.

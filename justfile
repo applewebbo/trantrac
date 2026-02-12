@@ -300,3 +300,12 @@ release-delete tag:
     curl -X DELETE "https://codeberg.org/api/v1/repos/webbografico/trantrac/releases/tags/{{tag}}" \
       -H "Authorization: token ${TOKEN}"
     echo "✓ Release {{tag}} deleted"
+
+# ============================================================================
+# Beans
+# ============================================================================
+
+# List active beans (excludes completed and scrapped)
+[group: 'beans']
+beans:
+    beans list --no-status completed --no-status scrapped

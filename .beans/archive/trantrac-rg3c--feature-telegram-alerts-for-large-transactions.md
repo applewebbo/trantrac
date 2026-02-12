@@ -1,11 +1,11 @@
 ---
 # trantrac-rg3c
 title: 'Feature: Telegram alerts for large transactions'
-status: todo
+status: scrapped
 type: feature
 priority: low
 created_at: 2026-02-11T20:48:46Z
-updated_at: 2026-02-11T20:48:46Z
+updated_at: 2026-02-12T14:08:46Z
 ---
 
 ## Plan
@@ -37,3 +37,7 @@ updated_at: 2026-02-11T20:48:46Z
 - [ ] Implement alert check after transaction save
 - [ ] Add /soglia Telegram command
 - [ ] Add tests
+
+## Reasons for Scrapping
+
+Decision to not implement this feature.

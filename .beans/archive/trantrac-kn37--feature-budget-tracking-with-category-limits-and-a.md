@@ -1,11 +1,11 @@
 ---
 # trantrac-kn37
 title: 'Feature: budget tracking with category limits and alerts'
-status: todo
+status: scrapped
 type: feature
 priority: normal
 created_at: 2026-02-11T20:48:33Z
-updated_at: 2026-02-11T20:48:33Z
+updated_at: 2026-02-12T14:08:46Z
 ---
 
 ## Plan
@@ -45,3 +45,7 @@ updated_at: 2026-02-11T20:48:33Z
 - [ ] Add budget alerts (on-page)
 - [ ] Add copy-from-previous-month feature
 - [ ] Add tests
+
+## Reasons for Scrapping
+
+Decision to not implement this feature.

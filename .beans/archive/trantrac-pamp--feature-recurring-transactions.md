@@ -1,11 +1,11 @@
 ---
 # trantrac-pamp
 title: 'Feature: recurring transactions'
-status: todo
+status: scrapped
 type: feature
 priority: low
 created_at: 2026-02-11T20:48:46Z
-updated_at: 2026-02-11T20:48:46Z
+updated_at: 2026-02-12T14:10:32Z
 ---
 
 ## Plan
@@ -48,3 +48,7 @@ updated_at: 2026-02-11T20:48:46Z
 - [ ] Create templates
 - [ ] Add cron setup docs
 - [ ] Add tests
+
+## Reasons for Scrapping
+
+Decision to not implement this feature.
