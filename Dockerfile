@@ -10,10 +10,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONPATH=/srv
 ENV PYTHONUNBUFFERED=1
 
-# install uv and other dependencies (including WeasyPrint system libs)
+# install system dependencies (WeasyPrint libs)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    unzip \
     libpango-1.0-0 \
     libpangoft2-1.0-0 \
     libgdk-pixbuf2.0-0 \
@@ -23,22 +21,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install --upgrade pip uv
 RUN python -m uv venv
 
-# Install Bun
-RUN curl -fsSL https://bun.sh/install | bash
-
-# Copy project files
-COPY . /app
-
-# # Install DaisyUI using Bun
-RUN ~/.bun/bin/bun install
-
 # activate virtual env
 ENV PATH=/app/.venv/bin:$PATH
 
-# install Python dependencies
-COPY pyproject.toml ./
-COPY uv.lock ./
+# install Python dependencies (cached layer, only invalidated when deps change)
+COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --group prod --no-install-project
+
+# Copy project files
+COPY . /app
 
 # expose port for granian
 EXPOSE 80

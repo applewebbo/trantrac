@@ -1,4 +1,7 @@
+import json
+
 import pytest
+from django.test import Client
 from django.urls import resolve, reverse
 
 
@@ -27,3 +30,21 @@ class TestCoreUrls:
         """Test users delete URL resolves correctly"""
         url = reverse("users:user_delete")
         assert url == "/users/delete/"
+
+    def test_health_check_returns_200(self):
+        """Test /health/ returns 200 without authentication"""
+        client = Client()
+        response = client.get(reverse("health_check"))
+        assert response.status_code == 200
+
+    def test_health_check_returns_json(self):
+        """Test /health/ returns JSON with status ok"""
+        client = Client()
+        response = client.get(reverse("health_check"))
+        data = json.loads(response.content)
+        assert data == {"status": "ok"}
+
+    def test_health_check_url(self):
+        """Test /health/ resolves correctly"""
+        url = reverse("health_check")
+        assert url == "/health/"
