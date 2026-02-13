@@ -19,5 +19,5 @@ exec granian "core.asgi:application" \
     --no-ws \
     --loop uvloop \
     --process-name "granian [core]" \
-    --workers 2 \
+    --workers 1 \
     --backpressure 16
