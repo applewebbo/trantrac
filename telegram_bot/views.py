@@ -24,58 +24,43 @@ from telegram_bot.handlers.transaction import route_message
 
 logger = logging.getLogger(__name__)
 
-# Initialize bot application (cached)
-_application = None
 
-
-def get_application() -> Application:
-    """Get or create Telegram bot application"""
-    global _application
-    if _application is None:
-        _application = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
-
-        # Register handlers
-        _application.add_handler(CommandHandler("start", handle_start))
-        _application.add_handler(CommandHandler("ultime", handle_recent_transactions))
-        _application.add_handler(
-            CallbackQueryHandler(
-                handle_delete_callback,
-                pattern="^(delete:|confirm_delete:|cancel_delete)",
-            )
+def _build_application() -> Application:
+    """Build a fresh Telegram bot application with all handlers registered."""
+    app = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", handle_start))
+    app.add_handler(CommandHandler("ultime", handle_recent_transactions))
+    app.add_handler(
+        CallbackQueryHandler(
+            handle_delete_callback,
+            pattern="^(delete:|confirm_delete:|cancel_delete)",
         )
-        _application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
-        _application.add_handler(
-            MessageHandler(filters.TEXT & ~filters.COMMAND, route_message)
-        )
-
-    return _application
+    )
+    app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, route_message))
+    return app
 
 
 @csrf_exempt
 async def telegram_webhook(request: HttpRequest) -> HttpResponse:
-    """
-    Webhook endpoint for Telegram updates
-
-    Verifies secret token and processes updates
-    """
+    """Webhook endpoint for Telegram updates."""
     if request.method != "POST":
         return HttpResponse("Method not allowed", status=405)
 
-    # Verify secret token (optional but recommended)
     secret_token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
     if secret_token != settings.TELEGRAM_WEBHOOK_SECRET:
         logger.warning("Invalid webhook secret token")
         return HttpResponse("Unauthorized", status=401)
 
     try:
-        # Parse update
         update_data = json.loads(request.body)
-        update = Update.de_json(update_data, get_application().bot)
 
-        # Process update
-        app = get_application()
-        await app.initialize()
-        await app.process_update(update)
+        # Use async context manager so the HTTP client lifecycle (init + shutdown)
+        # stays within the same event loop as the request — avoids "Event loop is closed"
+        # errors with Granian/uvloop on Python 3.14.
+        async with _build_application() as app:
+            update = Update.de_json(update_data, app.bot)
+            await app.process_update(update)
 
         return JsonResponse({"ok": True})
 
