@@ -7,7 +7,7 @@ from django.utils import timezone
 
 
 def generate_bot_id():
-    return "BOT-" + uuid4().hex[:8].upper()
+    return uuid4().hex[:8].upper() + "-BOT"
 
 
 class BotTransaction(models.Model):

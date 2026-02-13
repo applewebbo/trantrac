@@ -102,7 +102,7 @@ class TestHandleRecentTransactions(TestCase):
         assert len(buttons) == 5
 
 
-def _make_callback_update(chat_id=12345, callback_data="delete:BOT-AAAABBBB"):
+def _make_callback_update(chat_id=12345, callback_data="delete:AAAABBBB-BOT"):
     update = MagicMock()
     update.effective_chat.id = chat_id
     update.callback_query = MagicMock()

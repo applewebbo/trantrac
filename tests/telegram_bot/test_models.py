@@ -89,12 +89,12 @@ class TestCategoryKeyword(TestCase):
 
 class TestGenerateBotId:
     def test_format(self):
-        """Test bot_id format is BOT-XXXXXXXX"""
+        """Test bot_id format is XXXXXXXX-BOT"""
         bot_id = generate_bot_id()
-        assert bot_id.startswith("BOT-")
-        assert len(bot_id) == 12  # BOT- (4) + 8 hex chars
-        assert bot_id[4:].isupper()
-        assert all(c in "0123456789ABCDEF" for c in bot_id[4:])
+        assert bot_id.endswith("-BOT")
+        assert len(bot_id) == 12  # 8 hex chars + -BOT (4)
+        assert bot_id[:8].isupper()
+        assert all(c in "0123456789ABCDEF" for c in bot_id[:8])
 
     def test_uniqueness(self):
         """Test that generate_bot_id produces unique values"""
@@ -134,7 +134,7 @@ class TestBotTransaction(TestCase):
 
     def test_bot_id_auto_generated(self):
         tx = self._make_bot_tx()
-        assert tx.bot_id.startswith("BOT-")
+        assert tx.bot_id.endswith("-BOT")
         assert len(tx.bot_id) == 12
 
     def test_bot_id_unique(self):

@@ -437,20 +437,20 @@ class TestDeleteRowByIdentifier:
         mock_service = MagicMock()
         mock_get_service.return_value = mock_service
 
-        # Column H has: header, BOT-AAA, BOT-BBB
+        # Column H has: header, AAAAAA-BOT, BBBBBB-BOT
         mock_service.spreadsheets().values().get().execute.return_value = {
-            "values": [["header"], ["BOT-AAA"], ["BOT-BBB"]]
+            "values": [["header"], ["AAAAAA-BOT"], ["BBBBBB-BOT"]]
         }
         mock_service.spreadsheets().get().execute.return_value = {
             "sheets": [{"properties": {"title": "USCITE", "sheetId": 42}}]
         }
 
-        result = delete_row_by_identifier("USCITE", "BOT-BBB", 7)
+        result = delete_row_by_identifier("USCITE", "BBBBBB-BOT", 7)
 
         assert result is True
         batch_call = mock_service.spreadsheets().batchUpdate.call_args[1]["body"]
         delete_req = batch_call["requests"][0]["deleteDimension"]["range"]
-        assert delete_req["startIndex"] == 2  # row index 2 (BOT-BBB)
+        assert delete_req["startIndex"] == 2  # row index 2 (BBBBBB-BOT)
         assert delete_req["endIndex"] == 3
 
     @patch("trantrac.utils.get_sheets_service")
@@ -460,11 +460,11 @@ class TestDeleteRowByIdentifier:
         mock_get_service.return_value = mock_service
 
         mock_service.spreadsheets().values().get().execute.return_value = {
-            "values": [["BOT-AAA"], ["BOT-BBB"]]
+            "values": [["AAAAAA-BOT"], ["BBBBBB-BOT"]]
         }
 
         with pytest.raises(ValueError, match="not found"):
-            delete_row_by_identifier("USCITE", "BOT-ZZZ", 7)
+            delete_row_by_identifier("USCITE", "ZZZZZZ-BOT", 7)
 
     @patch("trantrac.utils.get_sheets_service")
     def test_raises_when_sheet_empty(self, mock_get_service):
@@ -475,4 +475,4 @@ class TestDeleteRowByIdentifier:
         mock_service.spreadsheets().values().get().execute.return_value = {}
 
         with pytest.raises(ValueError, match="not found"):
-            delete_row_by_identifier("USCITE", "BOT-AAA", 7)
+            delete_row_by_identifier("USCITE", "AAAAAA-BOT", 7)

@@ -177,7 +177,7 @@ class TestCreateTransaction(TestCase):
         assert bt is not None
         assert bt.amount == Decimal("50.00")
         assert bt.description == "caffè"
-        assert bt.bot_id.startswith("BOT-")
+        assert bt.bot_id.endswith("-BOT")
 
     @patch("telegram_bot.services.transaction_service.save_to_sheet")
     def test_create_transaction_includes_bot_id_in_sheet_values(self, mock_save):
@@ -195,7 +195,7 @@ class TestCreateTransaction(TestCase):
         call_args = mock_save.call_args[0]
         row = call_args[0][0]
         assert len(row) == 8
-        assert row[7].startswith("BOT-")
+        assert row[7].endswith("-BOT")
 
     @patch("telegram_bot.services.transaction_service.save_to_sheet")
     def test_create_transaction_failure_does_not_save_bot_transaction(self, mock_save):
@@ -325,7 +325,7 @@ class TestDeleteBotTransaction(TestCase):
 
     def test_delete_not_found(self):
         """Returns error when bot_id does not exist for user."""
-        success, message = delete_bot_transaction(self.user, "BOT-NOTEXIST")
+        success, message = delete_bot_transaction(self.user, "NOTEXIST-BOT")
 
         assert success is False
         assert "non trovata" in message
