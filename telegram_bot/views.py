@@ -24,21 +24,29 @@ from telegram_bot.handlers.transaction import route_message
 
 logger = logging.getLogger(__name__)
 
+# Shared Application instance — initialized once per worker in ASGI mode,
+# preserving context.user_data across requests within the same worker.
+_application: Application | None = None
 
-def _build_application() -> Application:
-    """Build a fresh Telegram bot application with all handlers registered."""
-    app = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", handle_start))
-    app.add_handler(CommandHandler("ultime", handle_recent_transactions))
-    app.add_handler(
-        CallbackQueryHandler(
-            handle_delete_callback,
-            pattern="^(delete:|confirm_delete:|cancel_delete)",
+
+def get_application() -> Application:
+    """Get or create the shared Telegram bot Application."""
+    global _application
+    if _application is None:
+        _application = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
+        _application.add_handler(CommandHandler("start", handle_start))
+        _application.add_handler(CommandHandler("ultime", handle_recent_transactions))
+        _application.add_handler(
+            CallbackQueryHandler(
+                handle_delete_callback,
+                pattern="^(delete:|confirm_delete:|cancel_delete)",
+            )
         )
-    )
-    app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, route_message))
-    return app
+        _application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
+        _application.add_handler(
+            MessageHandler(filters.TEXT & ~filters.COMMAND, route_message)
+        )
+    return _application
 
 
 @csrf_exempt
@@ -54,14 +62,11 @@ async def telegram_webhook(request: HttpRequest) -> HttpResponse:
 
     try:
         update_data = json.loads(request.body)
-
-        # Use async context manager so the HTTP client lifecycle (init + shutdown)
-        # stays within the same event loop as the request — avoids "Event loop is closed"
-        # errors with Granian/uvloop on Python 3.14.
-        async with _build_application() as app:
-            update = Update.de_json(update_data, app.bot)
-            await app.process_update(update)
-
+        app = get_application()
+        # initialize() is idempotent — safe to call on every request.
+        await app.initialize()
+        update = Update.de_json(update_data, app.bot)
+        await app.process_update(update)
         return JsonResponse({"ok": True})
 
     except json.JSONDecodeError:

@@ -12,10 +12,10 @@ echo "Collecting static files..."
 python manage.py collectstatic --no-input
 
 echo "Starting granian..."
-exec granian "core.wsgi:application" \
+exec granian "core.asgi:application" \
     --host 0.0.0.0 \
     --port 80 \
-    --interface wsgi \
+    --interface asgi \
     --no-ws \
     --loop uvloop \
     --process-name "granian [core]" \
