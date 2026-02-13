@@ -1,11 +1,11 @@
 ---
 # trantrac-ev7w
 title: 'Bot Telegram: visualizza e cancella ultime transazioni'
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-02-13T07:43:14Z
-updated_at: 2026-02-13T08:10:30Z
+updated_at: 2026-02-13T10:03:23Z
 ---
 
 Aggiungere al bot Telegram la possibilità di:

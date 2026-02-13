@@ -1,11 +1,11 @@
 ---
 # trantrac-nawa
 title: 'Post-deploy checklist: bot transactions feature in production'
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-13T08:43:01Z
-updated_at: 2026-02-13T08:49:30Z
+updated_at: 2026-02-13T10:03:23Z
 ---
 
 Checklist delle operazioni da eseguire dopo il deploy del branch 2026.4 in produzione per testare il bot.
