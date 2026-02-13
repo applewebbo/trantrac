@@ -36,7 +36,7 @@ def get_application() -> Application:
 
         # Register handlers
         _application.add_handler(CommandHandler("start", handle_start))
-        _application.add_handler(CommandHandler("ultimi", handle_recent_transactions))
+        _application.add_handler(CommandHandler("ultime", handle_recent_transactions))
         _application.add_handler(
             CallbackQueryHandler(
                 handle_delete_callback,

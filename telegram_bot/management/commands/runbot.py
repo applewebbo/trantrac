@@ -5,6 +5,7 @@ import logging
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from telegram import BotCommand
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -19,6 +20,16 @@ from telegram_bot.handlers.history import (
     handle_recent_transactions,
 )
 from telegram_bot.handlers.transaction import route_message
+
+BOT_COMMANDS = [
+    BotCommand("start", "Collegati o controlla il tuo account"),
+    BotCommand("ultime", "Mostra le ultime 5 transazioni inserite"),
+]
+
+
+async def _set_commands(app: Application) -> None:
+    await app.bot.set_my_commands(BOT_COMMANDS)
+
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +49,16 @@ class Command(BaseCommand):
         )
 
         # Build application
-        application = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
+        application = (
+            Application.builder()
+            .token(settings.TELEGRAM_BOT_TOKEN)
+            .post_init(_set_commands)
+            .build()
+        )
 
         # Register handlers
         application.add_handler(CommandHandler("start", handle_start))
-        application.add_handler(CommandHandler("ultimi", handle_recent_transactions))
+        application.add_handler(CommandHandler("ultime", handle_recent_transactions))
         application.add_handler(
             CallbackQueryHandler(
                 handle_delete_callback,

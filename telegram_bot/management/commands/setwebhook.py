@@ -4,7 +4,7 @@ import logging
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from telegram import Bot
+from telegram import Bot, BotCommand
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,15 @@ class Command(BaseCommand):
 
             if success:
                 self.stdout.write(self.style.SUCCESS("✅ Webhook set successfully!"))
+
+                # Register bot commands (visible in Telegram command menu)
+                bot.set_my_commands(
+                    [
+                        BotCommand("start", "Collegati o controlla il tuo account"),
+                        BotCommand("ultime", "Mostra le ultime 5 transazioni inserite"),
+                    ]
+                )
+                self.stdout.write(self.style.SUCCESS("✅ Bot commands registered"))
 
                 # Verify webhook info
                 info = bot.get_webhook_info()
