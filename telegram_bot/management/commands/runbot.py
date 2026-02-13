@@ -7,12 +7,17 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from telegram.ext import (
     Application,
+    CallbackQueryHandler,
     CommandHandler,
     MessageHandler,
     filters,
 )
 
 from telegram_bot.handlers.auth import handle_contact, handle_start
+from telegram_bot.handlers.history import (
+    handle_delete_callback,
+    handle_recent_transactions,
+)
 from telegram_bot.handlers.transaction import route_message
 
 logger = logging.getLogger(__name__)
@@ -37,6 +42,13 @@ class Command(BaseCommand):
 
         # Register handlers
         application.add_handler(CommandHandler("start", handle_start))
+        application.add_handler(CommandHandler("ultimi", handle_recent_transactions))
+        application.add_handler(
+            CallbackQueryHandler(
+                handle_delete_callback,
+                pattern="^(delete:|confirm_delete:|cancel_delete)",
+            )
+        )
         application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
         application.add_handler(
             MessageHandler(filters.TEXT & ~filters.COMMAND, route_message)
@@ -51,7 +63,7 @@ class Command(BaseCommand):
         )
 
         try:
-            application.run_polling(allowed_updates=["message"])
+            application.run_polling(allowed_updates=["message", "callback_query"])
         except KeyboardInterrupt:
             self.stdout.write(self.style.WARNING("\nStopping bot..."))
         finally:

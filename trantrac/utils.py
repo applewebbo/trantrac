@@ -222,3 +222,71 @@ def get_sheet_data(sheet_name, range_name):
         return None
     finally:
         service.close()
+
+
+def delete_row_by_identifier(
+    sheet_name: str, identifier: str, identifier_column: int
+) -> bool:
+    """
+    Delete a row in a sheet by matching a unique identifier in a specific column.
+
+    Searches for identifier in identifier_column (0-based), then deletes the matching row.
+    Returns True on success, raises an exception on failure or if not found.
+    """
+    service = get_sheets_service()
+    spreadsheet_id = get_spreadsheet_id()
+
+    try:
+        # Fetch the identifier column to find the row index
+        col_letter = chr(ord("A") + identifier_column)
+        result = (
+            service.spreadsheets()
+            .values()
+            .get(
+                spreadsheetId=spreadsheet_id,
+                range=f"{sheet_name}!{col_letter}:{col_letter}",
+            )
+            .execute()
+        )
+
+        rows = result.get("values", [])
+        row_index = next(
+            (i for i, row in enumerate(rows) if row and row[0] == identifier),
+            None,
+        )
+
+        if row_index is None:
+            raise ValueError(
+                f"Identifier '{identifier}' not found in sheet '{sheet_name}'"
+            )
+
+        # Get sheet_id (gid) for the named sheet
+        meta = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+        sheet_id = next(
+            s["properties"]["sheetId"]
+            for s in meta["sheets"]
+            if s["properties"]["title"] == sheet_name
+        )
+
+        # Delete the row via batchUpdate
+        service.spreadsheets().batchUpdate(
+            spreadsheetId=spreadsheet_id,
+            body={
+                "requests": [
+                    {
+                        "deleteDimension": {
+                            "range": {
+                                "sheetId": sheet_id,
+                                "dimension": "ROWS",
+                                "startIndex": row_index,
+                                "endIndex": row_index + 1,
+                            }
+                        }
+                    }
+                ]
+            },
+        ).execute()
+
+        return True
+    finally:
+        service.close()

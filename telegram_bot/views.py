@@ -9,12 +9,17 @@ from django.views.decorators.csrf import csrf_exempt
 from telegram import Update
 from telegram.ext import (
     Application,
+    CallbackQueryHandler,
     CommandHandler,
     MessageHandler,
     filters,
 )
 
 from telegram_bot.handlers.auth import handle_contact, handle_start
+from telegram_bot.handlers.history import (
+    handle_delete_callback,
+    handle_recent_transactions,
+)
 from telegram_bot.handlers.transaction import route_message
 
 logger = logging.getLogger(__name__)
@@ -31,6 +36,13 @@ def get_application() -> Application:
 
         # Register handlers
         _application.add_handler(CommandHandler("start", handle_start))
+        _application.add_handler(CommandHandler("ultimi", handle_recent_transactions))
+        _application.add_handler(
+            CallbackQueryHandler(
+                handle_delete_callback,
+                pattern="^(delete:|confirm_delete:|cancel_delete)",
+            )
+        )
         _application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
         _application.add_handler(
             MessageHandler(filters.TEXT & ~filters.COMMAND, route_message)

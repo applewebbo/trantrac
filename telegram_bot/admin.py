@@ -1,6 +1,19 @@
 from django.contrib import admin
 
-from .models import CategoryKeyword, PendingTransaction, TelegramAuthSession
+from .models import (
+    BotTransaction,
+    CategoryKeyword,
+    PendingTransaction,
+    TelegramAuthSession,
+)
+
+
+@admin.register(BotTransaction)
+class BotTransactionAdmin(admin.ModelAdmin):
+    list_display = ["bot_id", "user", "amount", "description", "date", "created_at"]
+    list_filter = ["created_at", "user"]
+    search_fields = ["bot_id", "description", "user__email"]
+    readonly_fields = ["bot_id", "created_at", "telegram_message_id"]
 
 
 @admin.register(PendingTransaction)

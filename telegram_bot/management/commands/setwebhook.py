@@ -39,7 +39,7 @@ class Command(BaseCommand):
             success = bot.set_webhook(
                 url=webhook_url,
                 secret_token=secret_token,
-                allowed_updates=["message"],
+                allowed_updates=["message", "callback_query"],
             )
 
             if success:

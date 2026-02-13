@@ -1,8 +1,38 @@
 from datetime import timedelta
+from uuid import uuid4
 
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+
+
+def generate_bot_id():
+    return "BOT-" + uuid4().hex[:8].upper()
+
+
+class BotTransaction(models.Model):
+    """Transazioni salvate con successo via bot (max 5 per utente)"""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    description = models.CharField(max_length=200)
+    category = models.ForeignKey("trantrac.Category", on_delete=models.CASCADE)
+    subcategory = models.ForeignKey("trantrac.Subcategory", on_delete=models.CASCADE)
+    account = models.ForeignKey("trantrac.Account", on_delete=models.CASCADE)
+    date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    telegram_message_id = models.BigIntegerField()
+    bot_id = models.CharField(max_length=20, unique=True, default=generate_bot_id)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "created_at"]),
+            models.Index(fields=["bot_id"]),
+        ]
+
+    def __str__(self):
+        return f"{self.bot_id} — {self.user} — {self.amount}€ — {self.description}"
 
 
 class PendingTransaction(models.Model):
