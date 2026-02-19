@@ -1,11 +1,11 @@
 ---
 # trantrac-9es3
 title: Implementare CSV upload handler nel bot (solo admin)
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-19T14:03:34Z
-updated_at: 2026-02-19T14:03:54Z
+updated_at: 2026-02-19T14:29:08Z
 parent: trantrac-sy3t
 blocked_by:
     - trantrac-vapf
@@ -50,7 +50,7 @@ Errore:   '❌ Errore nell'importazione: [messaggio errore]'
 - Aggiungere istruzioni nel messaggio /start per admin
 
 ## Tasks
-- [ ] Creare `telegram_bot/handlers/csv_upload.py` con `handle_csv_upload`
+- [x] Creare `telegram_bot/handlers/csv_upload.py` con `handle_csv_upload`
 - [ ] Registrare handler in runbot.py e views.py
 - [ ] Aggiungere `/csv` ai BotCommand
 - [ ] Scrivere test

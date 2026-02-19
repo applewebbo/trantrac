@@ -20,6 +20,7 @@ from telegram_bot.handlers.auth import (
     handle_enrollment_approval,
     handle_start,
 )
+from telegram_bot.handlers.csv_upload import handle_csv_upload
 from telegram_bot.handlers.history import (
     handle_delete_callback,
     handle_recent_transactions,
@@ -53,6 +54,9 @@ def get_application() -> Application:
             )
         )
         _application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
+        _application.add_handler(
+            MessageHandler(filters.Document.FileExtension("csv"), handle_csv_upload)
+        )
         _application.add_handler(
             MessageHandler(filters.TEXT & ~filters.COMMAND, route_message)
         )

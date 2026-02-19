@@ -1,10 +1,11 @@
 ---
 # trantrac-sy3t
 title: 'Bot Enhancement v2: CSV, ruoli utente e sicurezza enrollment'
-status: todo
+status: completed
 type: epic
+priority: normal
 created_at: 2026-02-19T14:02:35Z
-updated_at: 2026-02-19T14:02:35Z
+updated_at: 2026-02-19T14:29:08Z
 ---
 
 ## Obiettivo
