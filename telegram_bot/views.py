@@ -15,7 +15,11 @@ from telegram.ext import (
     filters,
 )
 
-from telegram_bot.handlers.auth import handle_contact, handle_start
+from telegram_bot.handlers.auth import (
+    handle_contact,
+    handle_enrollment_approval,
+    handle_start,
+)
 from telegram_bot.handlers.history import (
     handle_delete_callback,
     handle_recent_transactions,
@@ -40,6 +44,12 @@ def get_application() -> Application:
             CallbackQueryHandler(
                 handle_delete_callback,
                 pattern="^(delete:|confirm_delete:|cancel_delete)",
+            )
+        )
+        _application.add_handler(
+            CallbackQueryHandler(
+                handle_enrollment_approval,
+                pattern="^(approve_enrollment:|reject_enrollment:)",
             )
         )
         _application.add_handler(MessageHandler(filters.CONTACT, handle_contact))

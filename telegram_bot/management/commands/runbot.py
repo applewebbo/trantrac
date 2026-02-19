@@ -14,7 +14,11 @@ from telegram.ext import (
     filters,
 )
 
-from telegram_bot.handlers.auth import handle_contact, handle_start
+from telegram_bot.handlers.auth import (
+    handle_contact,
+    handle_enrollment_approval,
+    handle_start,
+)
 from telegram_bot.handlers.history import (
     handle_delete_callback,
     handle_recent_transactions,
@@ -63,6 +67,12 @@ class Command(BaseCommand):
             CallbackQueryHandler(
                 handle_delete_callback,
                 pattern="^(delete:|confirm_delete:|cancel_delete)",
+            )
+        )
+        application.add_handler(
+            CallbackQueryHandler(
+                handle_enrollment_approval,
+                pattern="^(approve_enrollment:|reject_enrollment:)",
             )
         )
         application.add_handler(MessageHandler(filters.CONTACT, handle_contact))

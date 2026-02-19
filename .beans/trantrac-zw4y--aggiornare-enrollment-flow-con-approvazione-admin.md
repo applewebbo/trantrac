@@ -1,11 +1,11 @@
 ---
 # trantrac-zw4y
 title: Aggiornare enrollment flow con approvazione admin
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-19T14:03:09Z
-updated_at: 2026-02-19T14:03:44Z
+updated_at: 2026-02-19T14:21:42Z
 parent: trantrac-sy3t
 blocked_by:
     - trantrac-lbe9
@@ -62,7 +62,7 @@ reject_enrollment:{user_id}
 - `telegram_bot/views.py`: registrare nuovo callback handler nel webhook
 
 ## Tasks
-- [ ] Modificare `handle_email_message` per differenziare staff da utenti normali
+- [x] Modificare `handle_email_message` per differenziare staff da utenti normali
 - [ ] Aggiungere funzione `_notify_admins_of_enrollment(context, user)`
 - [ ] Creare `handle_enrollment_approval` callback handler (approve/reject)
 - [ ] Registrare callback handler in runbot.py e views.py
