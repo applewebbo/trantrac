@@ -1,11 +1,11 @@
 ---
 # trantrac-vapf
 title: Applicare auth guard a tutti gli handler esistenti del bot
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-19T14:03:21Z
-updated_at: 2026-02-19T14:03:54Z
+updated_at: 2026-02-19T14:26:12Z
 parent: trantrac-sy3t
 blocked_by:
     - trantrac-bdmf
@@ -41,7 +41,7 @@ Aggiornare tutti gli handler esistenti del bot per usare i nuovi helper di auten
 - **Utente normale**: solo comandi standard (`/ultime`)
 
 ## Tasks
-- [ ] Aggiornare `route_message` in transaction.py
+- [x] Aggiornare `route_message` in transaction.py
 - [ ] Aggiornare `handle_recent_transactions` in history.py
 - [ ] Aggiornare messaggio /start benvenuto per admin vs utente normale
 - [ ] Scrivere test per i vari casi

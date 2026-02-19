@@ -10,8 +10,8 @@ from telegram_bot.models import TelegramAuthSession
 from telegram_bot.services.parser import parse_transaction_message
 from telegram_bot.services.suggestions import get_subcategory_suggestions
 from telegram_bot.services.transaction_service import create_transaction
+from telegram_bot.utils.auth import get_approved_user, reply_if_not_enrolled
 from trantrac.models import Category, Subcategory
-from users.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -29,27 +29,21 @@ async def route_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     chat_id = update.effective_chat.id
     message_text = update.message.text.strip()
 
-    # Check authentication
-    user = await sync_to_async(User.objects.filter(telegram_chat_id=chat_id).first)()
+    # Check if mid-enrollment (user filling in email)
+    session_exists = await sync_to_async(
+        TelegramAuthSession.objects.filter(chat_id=chat_id).exists
+    )()
+    if session_exists:
+        from telegram_bot.handlers.auth import handle_email_message
 
-    if not user:
-        # Check if in auth flow
-        session_exists = await sync_to_async(
-            TelegramAuthSession.objects.filter(chat_id=chat_id).exists
-        )()
-
-        if session_exists:
-            # Handle as email message
-            from telegram_bot.handlers.auth import handle_email_message
-
-            await handle_email_message(update, context)
-            return
-
-        # Not authenticated
-        await update.message.reply_text(
-            "❌ Account non collegato.\nUsa /start per collegare il tuo account."
-        )
+        await handle_email_message(update, context)
         return
+
+    # Check enrollment/approval status
+    if await reply_if_not_enrolled(update):
+        return
+
+    user = await get_approved_user(update)
 
     # Get user's pending state from context
     user_data = context.user_data

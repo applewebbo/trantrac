@@ -16,6 +16,7 @@ from trantrac.models import Account, Category, Subcategory
 def _make_update(chat_id=12345):
     update = MagicMock()
     update.effective_chat.id = chat_id
+    update.callback_query = None
     update.message.reply_text = AsyncMock()
     return update
 
@@ -31,6 +32,7 @@ class TestHandleRecentTransactions(TestCase):
     def setUp(self):
         self.user = self.make_user("history@example.com")
         self.user.telegram_chat_id = 12345
+        self.user.telegram_status = "approved"
         self.user.save()
         self.category = Category.objects.create(name="Food")
         self.subcategory = Subcategory.objects.create(
@@ -120,6 +122,7 @@ class TestHandleDeleteCallback(TestCase):
     def setUp(self):
         self.user = self.make_user("del@example.com")
         self.user.telegram_chat_id = 12345
+        self.user.telegram_status = "approved"
         self.user.save()
         category = Category.objects.create(name="Food")
         subcategory = Subcategory.objects.create(

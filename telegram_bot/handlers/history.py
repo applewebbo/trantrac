@@ -8,7 +8,7 @@ from telegram.ext import ContextTypes
 
 from telegram_bot.models import BotTransaction
 from telegram_bot.services.transaction_service import delete_bot_transaction
-from users.models import User
+from telegram_bot.utils.auth import get_approved_user, reply_if_not_enrolled
 
 logger = logging.getLogger(__name__)
 
@@ -17,14 +17,10 @@ async def handle_recent_transactions(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
     """Show the last 5 transactions inserted via bot for the authenticated user."""
-    chat_id = update.effective_chat.id
-    user = await sync_to_async(User.objects.filter(telegram_chat_id=chat_id).first)()
-
-    if not user:
-        await update.message.reply_text(
-            "❌ Account non collegato.\nUsa /start per collegare il tuo account."
-        )
+    if await reply_if_not_enrolled(update):
         return
+
+    user = await get_approved_user(update)
 
     transactions = await sync_to_async(
         lambda: list(
@@ -74,12 +70,10 @@ async def handle_delete_callback(
     query = update.callback_query
     await query.answer()
 
-    chat_id = update.effective_chat.id
-    user = await sync_to_async(User.objects.filter(telegram_chat_id=chat_id).first)()
-
-    if not user:
-        await query.edit_message_text("❌ Account non collegato. Usa /start.")
+    if await reply_if_not_enrolled(update):
         return
+
+    user = await get_approved_user(update)
 
     data = query.data
 
