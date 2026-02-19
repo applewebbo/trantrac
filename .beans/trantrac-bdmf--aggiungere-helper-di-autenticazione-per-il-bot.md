@@ -1,11 +1,11 @@
 ---
 # trantrac-bdmf
 title: Aggiungere helper di autenticazione per il bot
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-19T14:02:52Z
-updated_at: 2026-02-19T14:03:44Z
+updated_at: 2026-02-19T14:15:57Z
 parent: trantrac-sy3t
 blocked_by:
     - trantrac-lbe9
@@ -45,6 +45,6 @@ async def reply_if_not_enrolled(update) -> bool:
 ```
 
 ## Tasks
-- [ ] Creare `telegram_bot/utils/__init__.py`
+- [x] Creare `telegram_bot/utils/__init__.py`
 - [ ] Creare `telegram_bot/utils/auth.py` con `get_approved_user`, `get_pending_user`, `reply_if_not_enrolled`
 - [ ] Scrivere test per gli helper

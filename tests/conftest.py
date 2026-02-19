@@ -95,9 +95,10 @@ def sample_csv_data():
 
 @pytest.fixture
 def authenticated_user(test_user):
-    """Create an authenticated user with telegram_chat_id"""
+    """Create an authenticated user with telegram_chat_id and approved status"""
     test_user.telegram_chat_id = 12345
     test_user.phone_number = "+39123456789"
+    test_user.telegram_status = "approved"
     test_user.save()
     return test_user
 
