@@ -3,22 +3,24 @@
 default:
     @just --list
 
-# ============================================================================
+##########################################################################
 # Setup
-# ============================================================================
+##########################################################################
 
-# Bootstrap the project (UV and BUN needed)
-[group: 'setup']
-bootstrap:
-    uv venv
-    source .venv/bin/activate
+# Ensure project virtualenv is up to date
+[group('setup')]
+@install:
     uv sync
-    bun add -D daisyui@beta
 
-# Install requirements
-[group: 'setup']
-requirements:
-    uv sync
+# Remove temporary files
+[group('setup')]
+clean:
+    rm -rf .venv .pytest_cache .mypy_cache .ruff_cache .coverage htmlcov .django_tailwind_cli
+    find . -type d -name "__pycache__" -exec rm -r {} +
+
+# Recreate project virtualenv from nothing
+[group('setup')]
+fresh: clean install
 
 # ============================================================================
 # Development
