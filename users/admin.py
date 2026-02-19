@@ -11,12 +11,23 @@ admin.site.unregister(Group)
 
 @admin.register(User)
 class UserAdmin(UserAdmin):
-    list_display = ("email", "display_name", "is_staff")
+    list_display = ("email", "display_name", "is_staff", "telegram_status")
+    list_filter = ("is_staff", "telegram_status")
     ordering = ("email",)
 
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         ("Personal info", {"fields": ("display_name",)}),
+        (
+            "Telegram",
+            {
+                "fields": (
+                    "telegram_chat_id",
+                    "phone_number",
+                    "telegram_status",
+                )
+            },
+        ),
         (
             "Permissions",
             {

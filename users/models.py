@@ -21,6 +21,20 @@ class User(AbstractUser):
         help_text="Numero di telefono per autenticazione Telegram",
     )
 
+    TELEGRAM_STATUS_PENDING = "pending"
+    TELEGRAM_STATUS_APPROVED = "approved"
+    TELEGRAM_STATUS_CHOICES = [
+        (TELEGRAM_STATUS_PENDING, "In attesa di approvazione"),
+        (TELEGRAM_STATUS_APPROVED, "Approvato"),
+    ]
+    telegram_status = models.CharField(
+        max_length=20,
+        choices=TELEGRAM_STATUS_CHOICES,
+        null=True,
+        blank=True,
+        help_text="Stato approvazione enrollment Telegram (NULL = non enrollato)",
+    )
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
