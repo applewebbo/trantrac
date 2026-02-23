@@ -104,6 +104,14 @@ testpaths = ["tests"]
 [tool.ty.environment]
 python-version = "3.14"
 
+# Django ORM attributes (objects, DoesNotExist, etc.) are not yet understood by ty.
+# Suppress unresolved-attribute in Django app code until ty gains Django support.
+[[tool.ty.overrides]]
+include = ["trantrac/**", "telegram_bot/**", "users/**", "tests/**"]
+
+[tool.ty.overrides.rules]
+unresolved-attribute = "ignore"
+
 [tool.ty.rules]
 missing-argument = "warn"
 unknown-argument = "warn"
