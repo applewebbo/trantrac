@@ -1,6 +1,8 @@
 """Unit tests for subcategory suggestions"""
 
 import pytest
+from django.test.utils import CaptureQueriesContext
+from django.db import connection
 
 from telegram_bot.services.suggestions import get_subcategory_suggestions
 
@@ -106,6 +108,24 @@ def test_suggestions_case_insensitive(authenticated_user, categories_setup):
     names_lower = {s.name for s in suggestions_lower}
     names_upper = {s.name for s in suggestions_upper}
     assert names_lower == names_upper
+
+
+@pytest.mark.django_db
+def test_suggestions_history_uses_single_bulk_query(
+    authenticated_user, categories_setup, category_usage_history
+):
+    """Test that fetching subcategories from history uses a single bulk query, not N+1"""
+    with CaptureQueriesContext(connection) as ctx:
+        suggestions = get_subcategory_suggestions(
+            authenticated_user, "__no_match__", limit=5
+        )
+
+    # history step: 1 query for recent_usage aggregation + 1 bulk query for subcategories
+    # fuzzy step: 1 query for all_subcategories (no fuzzy match, so no extra queries)
+    # Total queries should be fixed (not scale with number of history items)
+    query_count = len(ctx.captured_queries)
+    assert query_count <= 3, f"Expected ≤3 queries, got {query_count}"
+    assert len(suggestions) > 0
 
 
 @pytest.mark.django_db

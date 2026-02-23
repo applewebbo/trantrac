@@ -1,11 +1,11 @@
 ---
 # trantrac-tuav
 title: Fix N+1 query problem in suggestions service
-status: todo
+status: completed
 type: bug
 priority: critical
 created_at: 2026-02-22T19:54:00Z
-updated_at: 2026-02-22T19:54:00Z
+updated_at: 2026-02-23T15:00:07Z
 parent: trantrac-zm6a
 ---
 

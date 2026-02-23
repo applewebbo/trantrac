@@ -41,10 +41,16 @@ def get_subcategory_suggestions(
         .order_by("-usage_count")[:limit]
     )
 
-    for item in recent_usage:
-        subcategory = Subcategory.objects.select_related("category").get(
-            id=item["subcategory"]
+    subcategory_ids = [item["subcategory"] for item in recent_usage]
+    subcat_map = {
+        s.id: s
+        for s in Subcategory.objects.select_related("category").filter(
+            id__in=subcategory_ids
         )
+    }
+
+    for item in recent_usage:
+        subcategory = subcat_map[item["subcategory"]]
         suggestions.append(subcategory)
         seen_ids.add(subcategory.id)
 
