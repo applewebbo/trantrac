@@ -103,12 +103,19 @@ def import_csv_to_sheet(csv_file, user):
             f"Il file CSV non contiene le seguenti colonne: {', '.join(missing_columns)}",
         )
 
+    existing_ids = get_existing_transaction_ids()
     categories_subcategories = set()
     positive_values = []
     negative_values = []
+    skipped_count = 0
 
     for row in csv_reader:
         if not any(row.values()) or any("Saldo" in value for value in row.values()):
+            continue
+
+        codice = row["Codice identificativo"].strip()
+        if codice and codice in existing_ids:
+            skipped_count += 1
             continue
 
         importo = row["Importo"].replace("+", "").strip()
@@ -203,12 +210,37 @@ def import_csv_to_sheet(csv_file, user):
     success_positive = save_to_sheet(positive_values, "ENTRATE")
     success_negative = save_to_sheet(negative_values, "USCITE")
 
-    return (
-        success_positive and success_negative,
-        "File importato con successo"
-        if (success_positive and success_negative)
-        else "Ops, qualcosa è andato storto..",
-    )
+    imported_count = len(positive_values) + len(negative_values)
+    if success_positive and success_negative:
+        msg = f"Importate {imported_count} transazioni"
+        if skipped_count:
+            msg += f", {skipped_count} duplicate saltate"
+        return (True, msg)
+    return (False, "Ops, qualcosa è andato storto..")
+
+
+def get_existing_transaction_ids() -> set[str]:
+    """Fetch all Codice identificativo from ENTRATE (col F) and USCITE (col H)."""
+    service = get_sheets_service()
+    spreadsheet_id = get_spreadsheet_id()
+    try:
+        result = (
+            service.spreadsheets()
+            .values()
+            .batchGet(
+                spreadsheetId=spreadsheet_id,
+                ranges=["ENTRATE!F:F", "USCITE!H:H"],
+            )
+            .execute()
+        )
+        ids: set[str] = set()
+        for value_range in result.get("valueRanges", []):
+            for row in value_range.get("values", []):
+                if row and row[0]:
+                    ids.add(row[0])
+        return ids
+    finally:
+        service.close()
 
 
 def get_sheet_data(sheet_name, range_name):

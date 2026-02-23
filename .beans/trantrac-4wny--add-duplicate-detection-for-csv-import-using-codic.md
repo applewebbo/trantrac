@@ -1,11 +1,11 @@
 ---
 # trantrac-4wny
 title: Add duplicate detection for CSV import using Codice identificativo
-status: todo
+status: completed
 type: bug
 priority: critical
 created_at: 2026-02-22T20:00:48Z
-updated_at: 2026-02-22T20:00:48Z
+updated_at: 2026-02-23T19:29:07Z
 parent: trantrac-zm6a
 ---
 
@@ -49,13 +49,17 @@ def get_existing_transaction_ids() -> set[str]:
 
 ## Tasks
 
-- [ ] Implement `get_existing_transaction_ids()` using batchGet
-- [ ] Skip duplicate rows in `import_csv_to_sheet()`
-- [ ] Track and include skipped count in return message
-- [ ] Handle empty/missing Codice identificativo
-- [ ] Add tests for duplicate detection
-- [ ] Add test for empty ID edge case
+- [x] Implement `get_existing_transaction_ids()` using batchGet
+- [x] Skip duplicate rows in `import_csv_to_sheet()`
+- [x] Track and include skipped count in return message
+- [x] Handle empty/missing Codice identificativo
+- [x] Add tests for duplicate detection
+- [x] Add test for empty ID edge case
 
 ## Expected Return Message
 
 "Importate 15 transazioni, 3 duplicate saltate"
+
+## Summary of Changes
+
+Added `get_existing_transaction_ids()` that fetches existing IDs from ENTRATE (col F) and USCITE (col H) via batchGet. Updated `import_csv_to_sheet()` to skip duplicates and return counts in message (e.g. "Importate 5 transazioni, 2 duplicate saltate"). Added 5 new tests with 100% coverage.

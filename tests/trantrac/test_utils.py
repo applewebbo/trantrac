@@ -8,6 +8,7 @@ from tests.conftest import TestCase
 from trantrac.models import Category, Subcategory
 from trantrac.utils import (
     delete_row_by_identifier,
+    get_existing_transaction_ids,
     get_sheet_data,
     get_sheets_service,
     import_csv_to_sheet,
@@ -190,10 +191,66 @@ class TestGetSheetData:
 
 
 @pytest.mark.django_db
+class TestGetExistingTransactionIds:
+    @patch("trantrac.utils.get_sheets_service")
+    def test_returns_ids_from_both_sheets(self, mock_get_service):
+        """Test that IDs are collected from ENTRATE and USCITE"""
+        mock_service = MagicMock()
+        mock_get_service.return_value = mock_service
+
+        mock_service.spreadsheets().values().batchGet().execute.return_value = {
+            "valueRanges": [
+                {"values": [["ABC123"], ["DEF456"]]},
+                {"values": [["GHI789"], ["JKL012"]]},
+            ]
+        }
+
+        result = get_existing_transaction_ids()
+
+        assert result == {"ABC123", "DEF456", "GHI789", "JKL012"}
+        mock_service.close.assert_called_once()
+
+    @patch("trantrac.utils.get_sheets_service")
+    def test_returns_empty_set_when_no_data(self, mock_get_service):
+        """Test that empty set is returned when sheets are empty"""
+        mock_service = MagicMock()
+        mock_get_service.return_value = mock_service
+
+        mock_service.spreadsheets().values().batchGet().execute.return_value = {
+            "valueRanges": []
+        }
+
+        result = get_existing_transaction_ids()
+
+        assert result == set()
+
+    @patch("trantrac.utils.get_sheets_service")
+    def test_ignores_empty_rows(self, mock_get_service):
+        """Test that empty rows are ignored"""
+        mock_service = MagicMock()
+        mock_get_service.return_value = mock_service
+
+        mock_service.spreadsheets().values().batchGet().execute.return_value = {
+            "valueRanges": [
+                {"values": [["ABC123"], [], ["DEF456"]]},
+            ]
+        }
+
+        result = get_existing_transaction_ids()
+
+        assert result == {"ABC123", "DEF456"}
+
+
+@pytest.mark.django_db
 class TestImportCsvToSheet(TestCase):
     def setUp(self):
         """Setup test data"""
         self.user = self.make_user("test@example.com")
+        patcher = patch(
+            "trantrac.utils.get_existing_transaction_ids", return_value=set()
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def create_csv_file(self, content):
         """Helper to create InMemoryUploadedFile from CSV content"""
@@ -223,7 +280,7 @@ class TestImportCsvToSheet(TestCase):
         success, message = import_csv_to_sheet(csv_file, self.user)
 
         assert success is True
-        assert "File importato con successo" in message
+        assert "Importate 2 transazioni" in message
 
     @patch("trantrac.utils.save_to_sheet")
     def test_import_csv_missing_columns(self, mock_save_sheet):
@@ -459,6 +516,50 @@ class TestImportCsvToSheet(TestCase):
 
         # Import should succeed even if sync fails
         assert success is True
+
+    @patch("trantrac.utils.save_to_sheet")
+    @patch("trantrac.models.save_category_and_sub_to_sheet")
+    @patch(
+        "trantrac.utils.get_existing_transaction_ids", return_value={"ABC123", "DEF456"}
+    )
+    def test_import_csv_skips_duplicate_ids(
+        self, mock_existing, mock_save_cat, mock_save_sheet
+    ):
+        """Test that rows with already-imported Codice identificativo are skipped"""
+        mock_save_cat.return_value = True
+        mock_save_sheet.return_value = True
+
+        csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
+01/01/2025,-100.50,Already imported,Food,Groceries,ABC123
+02/01/2025,-50.00,New transaction,Food,Groceries,GHI789
+03/01/2025,+200.00,Also imported,Salary,,DEF456"""
+
+        csv_file = self.create_csv_file(csv_content)
+        success, message = import_csv_to_sheet(csv_file, self.user)
+
+        assert success is True
+        assert "Importate 1 transazioni" in message
+        assert "2 duplicate saltate" in message
+
+    @patch("trantrac.utils.save_to_sheet")
+    @patch("trantrac.models.save_category_and_sub_to_sheet")
+    @patch("trantrac.utils.get_existing_transaction_ids", return_value={"XYZ999"})
+    def test_import_csv_empty_id_not_skipped(
+        self, mock_existing, mock_save_cat, mock_save_sheet
+    ):
+        """Test that rows with empty Codice identificativo are never skipped"""
+        mock_save_cat.return_value = True
+        mock_save_sheet.return_value = True
+
+        csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
+01/01/2025,-100.50,No ID transaction,Food,Groceries,"""
+
+        csv_file = self.create_csv_file(csv_content)
+        success, message = import_csv_to_sheet(csv_file, self.user)
+
+        assert success is True
+        assert "Importate 1 transazioni" in message
+        assert "duplicate" not in message
 
 
 @pytest.mark.django_db
