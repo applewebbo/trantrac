@@ -149,15 +149,13 @@ class TestCategoryUsageModel(TestCase):
 
 @pytest.mark.django_db
 class TestSaveCategoryAndSubToSheet:
-    @patch("trantrac.models.build")
-    @patch("trantrac.models.service_account.Credentials.from_service_account_info")
-    def test_save_category_and_sub_to_sheet_success(self, mock_creds, mock_build):
+    @patch("trantrac.utils.get_sheets_service")
+    def test_save_category_and_sub_to_sheet_success(self, mock_get_service):
         """Test save_category_and_sub_to_sheet returns True on success"""
         from trantrac.models import save_category_and_sub_to_sheet
 
-        # Setup mocks
         mock_service = MagicMock()
-        mock_build.return_value = mock_service
+        mock_get_service.return_value = mock_service
         mock_service.spreadsheets().values().append().execute.return_value = {
             "updates": {"updatedRows": 1}
         }
@@ -167,15 +165,13 @@ class TestSaveCategoryAndSubToSheet:
         assert result is True
         mock_service.close.assert_called_once()
 
-    @patch("trantrac.models.build")
-    @patch("trantrac.models.service_account.Credentials.from_service_account_info")
-    def test_save_category_and_sub_to_sheet_failure(self, mock_creds, mock_build):
+    @patch("trantrac.utils.get_sheets_service")
+    def test_save_category_and_sub_to_sheet_failure(self, mock_get_service):
         """Test save_category_and_sub_to_sheet returns False on failure"""
         from trantrac.models import save_category_and_sub_to_sheet
 
-        # Setup mocks
         mock_service = MagicMock()
-        mock_build.return_value = mock_service
+        mock_get_service.return_value = mock_service
         mock_service.spreadsheets().values().append().execute.return_value = {
             "updates": {"updatedRows": 0}
         }
@@ -184,6 +180,39 @@ class TestSaveCategoryAndSubToSheet:
 
         assert result is False
         mock_service.close.assert_called_once()
+
+    @patch("trantrac.utils.get_sheets_service")
+    def test_save_category_and_sub_to_sheet_exception(self, mock_get_service):
+        """Test save_category_and_sub_to_sheet returns False on API exception"""
+        from trantrac.models import save_category_and_sub_to_sheet
+
+        mock_service = MagicMock()
+        mock_get_service.return_value = mock_service
+        mock_service.spreadsheets().values().append().execute.side_effect = Exception(
+            "API error"
+        )
+
+        result = save_category_and_sub_to_sheet([["Food", "Groceries"]])
+
+        assert result is False
+        mock_service.close.assert_called_once()
+
+    @patch("trantrac.utils.get_sheets_service")
+    def test_subcategory_save_db_succeeds_even_if_sheets_fails(self, mock_get_service):
+        """Test that DB save succeeds even if Sheets sync raises outside its try block"""
+        from trantrac.models import Category, Subcategory
+
+        # get_sheets_service is called before the try block in save_category_and_sub_to_sheet
+        # so raising here causes the exception to propagate to Subcategory.save's except (lines 73-74)
+        mock_get_service.side_effect = Exception("Service unavailable")
+
+        category = Category.objects.create(name="TestCat")
+        subcategory = Subcategory(
+            name="TestSub", category=category, skip_sheet_save=False
+        )
+        subcategory.save()
+
+        assert Subcategory.objects.filter(name="TestSub").exists()
 
 
 @pytest.mark.django_db

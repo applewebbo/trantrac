@@ -183,6 +183,27 @@ class TestIndexView(TestCase):
         assert response.status_code == 302
 
     @patch("trantrac.views.save_to_sheet")
+    def test_index_post_sheet_exception(self, mock_save):
+        """Test index view POST when save_to_sheet raises an exception"""
+        mock_save.side_effect = Exception("Sheets API down")
+
+        with self.login(username=self.user.email, password="password"):
+            response = self.post(
+                "index",
+                data={
+                    "amount": "100.50",
+                    "date": "2025-01-15",
+                    "description": "Test transaction",
+                    "category": self.category.id,
+                    "subcategory": self.subcategory.id,
+                    "bank_account": self.account.id,
+                },
+            )
+
+        messages = list(get_messages(response.wsgi_request))
+        assert any("qualcosa è andato storto" in str(m) for m in messages)
+
+    @patch("trantrac.views.save_to_sheet")
     def test_index_post_invalid_form(self, mock_save):
         """Test index view POST with invalid form data"""
         with self.login(username=self.user.email, password="password"):

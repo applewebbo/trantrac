@@ -131,6 +131,20 @@ class TestSaveToSheet:
         append_call = mock_service.spreadsheets().values().append
         assert "USCITE!A6:C6" in str(append_call.call_args)
 
+    @patch("trantrac.utils.get_sheets_service")
+    def test_save_to_sheet_returns_false_on_exception(self, mock_get_service):
+        """Test save_to_sheet returns False when API raises an exception"""
+        mock_service = MagicMock()
+        mock_get_service.return_value = mock_service
+        mock_service.spreadsheets().values().get().execute.side_effect = Exception(
+            "API error"
+        )
+
+        result = save_to_sheet([["row"]], "USCITE")
+
+        assert result is False
+        mock_service.close.assert_called_once()
+
 
 @pytest.mark.django_db
 class TestGetSheetData:
@@ -427,6 +441,24 @@ class TestImportCsvToSheet(TestCase):
         assert Category.objects.filter(name="Food").exists()
         # But no subcategory since it's empty
         assert not Subcategory.objects.filter(category__name="Food").exists()
+
+    @patch("trantrac.utils.save_to_sheet")
+    @patch("trantrac.models.save_category_and_sub_to_sheet")
+    def test_import_csv_continues_if_category_sync_fails(
+        self, mock_save_cat, mock_save_sheet
+    ):
+        """Test CSV import continues even if category sheet sync raises exception"""
+        mock_save_cat.side_effect = Exception("Sheets API error")
+        mock_save_sheet.return_value = True
+
+        csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
+01/01/2025,-100.50,Test Transaction,Food,Groceries,ABC123"""
+
+        csv_file = self.create_csv_file(csv_content)
+        success, message = import_csv_to_sheet(csv_file, self.user)
+
+        # Import should succeed even if sync fails
+        assert success is True
 
 
 @pytest.mark.django_db

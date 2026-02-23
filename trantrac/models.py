@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from django.conf import settings
@@ -6,20 +7,16 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
+
+logger = logging.getLogger(__name__)
 
 
 def save_category_and_sub_to_sheet(values):
     """Save category and subcategory to Google Sheets"""
-    SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+    from trantrac.utils import get_sheets_service
 
-    # Get settings from database
     sheets_settings = GoogleSheetsSettings.get_settings()
-    credentials = service_account.Credentials.from_service_account_info(
-        sheets_settings.get_credentials_dict(), scopes=SCOPES
-    )
-    service = build("sheets", "v4", credentials=credentials)
+    service = get_sheets_service()
 
     try:
         body = {"values": values}
@@ -37,6 +34,9 @@ def save_category_and_sub_to_sheet(values):
         )
 
         return result.get("updates").get("updatedRows") == 1
+    except Exception:
+        logger.exception("Failed to save categories to sheet")
+        return False
     finally:
         service.close()
 
@@ -65,11 +65,13 @@ class Subcategory(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        if not self.skip_sheet_save:
-            values = [[self.category.name, self.name]]
-            save_category_and_sub_to_sheet(values)
-            pass
         super().save(*args, **kwargs)
+        if not self.skip_sheet_save:
+            try:
+                values = [[self.category.name, self.name]]
+                save_category_and_sub_to_sheet(values)
+            except Exception:
+                logger.exception("Failed to sync subcategory '%s' to sheet", self.name)
 
 
 class Account(models.Model):

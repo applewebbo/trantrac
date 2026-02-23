@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
@@ -9,6 +11,8 @@ from django.urls import reverse
 from trantrac.forms import CategoryForm, CsvUploadForm, SubcategoryForm, TransactionForm
 from trantrac.models import Category, CategoryUsage, MonthlyReport, Subcategory
 from trantrac.utils import get_sheet_data, import_csv_to_sheet, save_to_sheet
+
+logger = logging.getLogger(__name__)
 
 
 def get_recent_categories(limit=6):
@@ -52,7 +56,13 @@ def index(request):
                 ]
             ]
 
-            if save_to_sheet(values, "USCITE"):
+            try:
+                success = save_to_sheet(values, "USCITE")
+            except Exception:
+                logger.exception("Unexpected error saving transaction to sheet")
+                success = False
+
+            if success:
                 # Track category usage
                 CategoryUsage.objects.create(
                     user=request.user,

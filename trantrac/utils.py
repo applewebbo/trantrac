@@ -1,8 +1,11 @@
 import csv
+import logging
 from io import TextIOWrapper
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+
+logger = logging.getLogger(__name__)
 
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -64,6 +67,9 @@ def save_to_sheet(values, sheet_name):
 
         expected_rows = len(values)
         return result.get("updates").get("updatedRows") == expected_rows
+    except Exception:
+        logger.exception("Failed to save data to sheet '%s'", sheet_name)
+        return False
     finally:
         service.close()
 
@@ -187,7 +193,10 @@ def import_csv_to_sheet(csv_file, user):
             subcategories_sheet_values.append([cat_name, subcat_name])
 
     if subcategories_sheet_values:
-        save_category_and_sub_to_sheet(subcategories_sheet_values)
+        try:
+            save_category_and_sub_to_sheet(subcategories_sheet_values)
+        except Exception:
+            logger.exception("Failed to sync new categories/subcategories to sheet")
 
     # Save transactions to respective sheets
     success_positive = save_to_sheet(positive_values, "ENTRATE")
@@ -219,6 +228,9 @@ def get_sheet_data(sheet_name, range_name):
 
         return result.get("values", [])
     except Exception:
+        logger.exception(
+            "Failed to get sheet data from '%s!%s'", sheet_name, range_name
+        )
         return None
     finally:
         service.close()
