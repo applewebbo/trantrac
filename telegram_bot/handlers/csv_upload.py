@@ -8,7 +8,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from telegram_bot.utils.auth import get_approved_user, reply_if_not_enrolled
-from trantrac.utils import import_csv_to_sheet
+from trantrac.utils import MAX_CSV_SIZE, import_csv_to_sheet
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +39,10 @@ async def handle_csv_upload(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     document = update.message.document
     if not document.file_name or not document.file_name.lower().endswith(".csv"):
         await update.message.reply_text("❌ Invia un file con estensione .csv")
+        return
+
+    if document.file_size and document.file_size > MAX_CSV_SIZE:
+        await update.message.reply_text("❌ File troppo grande (max 2MB)")
         return
 
     await update.message.reply_text("⏳ Elaborazione CSV in corso...")

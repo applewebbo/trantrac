@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+MAX_CSV_SIZE = 2 * 1024 * 1024  # 2MB
 
 
 def get_sheets_service():

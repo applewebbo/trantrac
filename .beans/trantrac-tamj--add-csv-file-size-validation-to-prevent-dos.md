@@ -1,11 +1,11 @@
 ---
 # trantrac-tamj
 title: Add CSV file size validation to prevent DoS
-status: todo
+status: completed
 type: bug
 priority: critical
 created_at: 2026-02-22T19:53:42Z
-updated_at: 2026-02-22T19:53:42Z
+updated_at: 2026-02-23T18:06:43Z
 parent: trantrac-zm6a
 ---
 

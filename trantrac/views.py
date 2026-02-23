@@ -10,7 +10,12 @@ from django.urls import reverse
 
 from trantrac.forms import CategoryForm, CsvUploadForm, SubcategoryForm, TransactionForm
 from trantrac.models import Category, CategoryUsage, MonthlyReport, Subcategory
-from trantrac.utils import get_sheet_data, import_csv_to_sheet, save_to_sheet
+from trantrac.utils import (
+    MAX_CSV_SIZE,
+    get_sheet_data,
+    import_csv_to_sheet,
+    save_to_sheet,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -140,9 +145,15 @@ def upload_csv(request):
     if request.method == "POST":
         form = CsvUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            success, message = import_csv_to_sheet(
-                request.FILES["csv_file"], request.user
-            )
+            csv_file = request.FILES["csv_file"]
+            if csv_file.size > MAX_CSV_SIZE:
+                messages.add_message(
+                    request, messages.ERROR, "File troppo grande (max 2MB)"
+                )
+                return HttpResponse(
+                    status=204, headers={"HX-Redirect": reverse("index")}
+                )
+            success, message = import_csv_to_sheet(csv_file, request.user)
             messages.add_message(
                 request,
                 messages.SUCCESS if success else messages.ERROR,

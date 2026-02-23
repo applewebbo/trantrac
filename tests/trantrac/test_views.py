@@ -359,6 +359,23 @@ class TestUploadCsvView(TestCase):
         assert response.status_code == 200
         assert "form" in response.context
 
+    def test_upload_csv_rejects_oversized_file(self):
+        """Test upload_csv returns error when CSV exceeds MAX_CSV_SIZE"""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from trantrac.utils import MAX_CSV_SIZE
+
+        # Use real content to ensure file size is accurate after test client encoding
+        big_content = b"x" * (MAX_CSV_SIZE + 1)
+        csv_file = SimpleUploadedFile("big.csv", big_content, content_type="text/csv")
+
+        with self.login(username=self.user.email, password="password"):
+            response = self.post("upload_csv", data={"csv_file": csv_file})
+
+        assert response.status_code == 204
+        msgs = list(get_messages(response.wsgi_request))
+        assert any("troppo grande" in str(m) for m in msgs)
+
 
 @pytest.mark.django_db
 class TestLoadSubcategoriesView(TestCase):

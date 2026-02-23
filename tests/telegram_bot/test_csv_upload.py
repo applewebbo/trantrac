@@ -17,6 +17,9 @@ def _make_update(chat_id=12345, file_name="transactions.csv"):
     update.message.document = MagicMock()
     update.message.document.file_name = file_name
     update.message.document.file_id = "fake-file-id"
+    update.message.document.file_size = (
+        None  # explicit to avoid MagicMock > int TypeError
+    )
     return update
 
 
@@ -74,6 +77,16 @@ class TestHandleCsvUpload(TestCase):
         update.message.reply_text.assert_awaited_once()
         text = update.message.reply_text.call_args[0][0]
         assert ".csv" in text
+
+    async def test_oversized_csv_gets_error(self):
+        from trantrac.utils import MAX_CSV_SIZE
+
+        update = _make_update(chat_id=11111)
+        update.message.document.file_size = MAX_CSV_SIZE + 1
+        await handle_csv_upload(update, _make_context())
+        update.message.reply_text.assert_awaited_once()
+        text = update.message.reply_text.call_args[0][0]
+        assert "troppo grande" in text
 
     @patch("telegram_bot.handlers.csv_upload.import_csv_to_sheet")
     async def test_admin_csv_success(self, mock_import):
