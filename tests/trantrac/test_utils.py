@@ -7,6 +7,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from tests.conftest import TestCase
 from trantrac.models import Category, Subcategory
 from trantrac.utils import (
+    _ensure_categories_in_db,
     delete_row_by_identifier,
     get_existing_transaction_ids,
     get_sheet_data,
@@ -561,6 +562,64 @@ class TestImportCsvToSheet(TestCase):
         assert success is True
         assert "Importate 1 transazioni" in message
         assert "duplicate" not in message
+
+
+@pytest.mark.django_db
+class TestEnsureCategoriesInDb:
+    @patch("trantrac.models.save_category_and_sub_to_sheet")
+    def test_creates_new_category_and_subcategory(self, mock_save):
+        """Creates missing category and subcategory in DB"""
+        mock_save.return_value = True
+        _ensure_categories_in_db({("Food", "Groceries")})
+        from trantrac.models import Category, Subcategory
+
+        assert Category.objects.filter(name="Food").exists()
+        assert Subcategory.objects.filter(name="Groceries").exists()
+
+    @patch("trantrac.models.save_category_and_sub_to_sheet")
+    def test_reuses_existing_category(self, mock_save):
+        """Does not create duplicate category"""
+        from trantrac.models import Category
+
+        Category.objects.create(name="Food")
+        _ensure_categories_in_db({("Food", "Groceries")})
+        assert Category.objects.filter(name="Food").count() == 1
+
+    @patch("trantrac.models.save_category_and_sub_to_sheet")
+    def test_skips_empty_subcategory(self, mock_save):
+        """Does not create subcategory when name is empty"""
+        from trantrac.models import Subcategory
+
+        _ensure_categories_in_db({("Food", "")})
+        assert not Subcategory.objects.filter(category__name="Food").exists()
+        mock_save.assert_not_called()
+
+    @patch("trantrac.models.save_category_and_sub_to_sheet")
+    def test_syncs_new_subcategories_to_sheets(self, mock_save):
+        """Calls save_category_and_sub_to_sheet for new subcategories"""
+        mock_save.return_value = True
+        _ensure_categories_in_db({("Food", "Groceries")})
+        mock_save.assert_called_once()
+
+    @patch("trantrac.models.save_category_and_sub_to_sheet")
+    def test_continues_if_sheet_sync_fails(self, mock_save):
+        """DB records are created even if Sheets sync raises"""
+        mock_save.side_effect = Exception("API error")
+        _ensure_categories_in_db({("Food", "Groceries")})
+        from trantrac.models import Category
+
+        assert Category.objects.filter(name="Food").exists()
+
+    @patch("trantrac.models.save_category_and_sub_to_sheet")
+    def test_reuses_existing_subcategory(self, mock_save):
+        """Does not create duplicate subcategory"""
+        from trantrac.models import Category, Subcategory
+
+        cat = Category.objects.create(name="Food")
+        Subcategory.objects.create(name="Groceries", category=cat, skip_sheet_save=True)
+        _ensure_categories_in_db({("Food", "Groceries")})
+        assert Subcategory.objects.filter(name="Groceries").count() == 1
+        mock_save.assert_not_called()
 
 
 class TestSanitizeCsvValue:

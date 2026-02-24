@@ -86,15 +86,57 @@ def save_to_sheet(values, sheet_name):
         service.close()
 
 
+def _ensure_categories_in_db(categories_subcategories: set) -> None:
+    """Bulk-create missing categories and subcategories, syncing new ones to sheets."""
+    from trantrac.models import Category, Subcategory, save_category_and_sub_to_sheet
+
+    existing_categories = {
+        cat.name: cat
+        for cat in Category.objects.filter(
+            name__in=[cat_name for cat_name, _ in categories_subcategories]
+        )
+    }
+
+    new_categories = []
+    for cat_name, _ in categories_subcategories:
+        if cat_name not in existing_categories:
+            new_cat = Category(name=cat_name)
+            new_categories.append(new_cat)
+            existing_categories[cat_name] = new_cat
+
+    Category.objects.bulk_create(new_categories)
+
+    existing_subcategories = {
+        (sub.name, sub.category.name): sub
+        for sub in Subcategory.objects.filter(
+            category__in=existing_categories.values()
+        ).select_related("category")
+    }
+
+    subcategories_sheet_values = []
+    for cat_name, subcat_name in categories_subcategories:
+        if not subcat_name:
+            continue
+        if (subcat_name, cat_name) not in existing_subcategories:
+            subcategory = Subcategory(
+                name=subcat_name,
+                category=existing_categories[cat_name],
+                skip_sheet_save=True,
+            )
+            subcategory.save()
+            subcategories_sheet_values.append([cat_name, subcat_name])
+
+    if subcategories_sheet_values:
+        try:
+            save_category_and_sub_to_sheet(subcategories_sheet_values)
+        except Exception:
+            logger.exception("Failed to sync new categories/subcategories to sheet")
+
+
 def import_csv_to_sheet(csv_file, user):
     """Import CSV file to Google Sheets separating positive and negative transactions"""
     # Import here to avoid circular import
-    from trantrac.models import (
-        Category,
-        Subcategory,
-        UserMapping,
-        save_category_and_sub_to_sheet,
-    )
+    from trantrac.models import UserMapping
 
     REQUIRED_COLUMNS = {
         "Data operazione",
@@ -197,51 +239,7 @@ def import_csv_to_sheet(csv_file, user):
             negative_values.append(transaction_row)
             categories_subcategories.add((categoria, sottocategoria))
 
-    # Bulk create categories for negative transactions only
-    existing_categories = {
-        cat.name: cat
-        for cat in Category.objects.filter(
-            name__in=[cat_name for cat_name, _ in categories_subcategories]
-        )
-    }
-
-    new_categories = []
-    for cat_name, _ in categories_subcategories:
-        if cat_name not in existing_categories:
-            new_cat = Category(name=cat_name)
-            new_categories.append(new_cat)
-            existing_categories[cat_name] = new_cat
-
-    Category.objects.bulk_create(new_categories)
-
-    # Handle subcategories for negative transactions only
-    existing_subcategories = {
-        (sub.name, sub.category.name): sub
-        for sub in Subcategory.objects.filter(
-            category__in=existing_categories.values()
-        ).select_related("category")
-    }
-
-    subcategories_sheet_values = []
-
-    for cat_name, subcat_name in categories_subcategories:
-        if not subcat_name:
-            continue
-
-        if (subcat_name, cat_name) not in existing_subcategories:
-            subcategory = Subcategory(
-                name=subcat_name,
-                category=existing_categories[cat_name],
-                skip_sheet_save=True,
-            )
-            subcategory.save()
-            subcategories_sheet_values.append([cat_name, subcat_name])
-
-    if subcategories_sheet_values:
-        try:
-            save_category_and_sub_to_sheet(subcategories_sheet_values)
-        except Exception:
-            logger.exception("Failed to sync new categories/subcategories to sheet")
+    _ensure_categories_in_db(categories_subcategories)
 
     # Save transactions to respective sheets
     success_positive = save_to_sheet(positive_values, "ENTRATE")
