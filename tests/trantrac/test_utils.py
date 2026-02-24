@@ -12,6 +12,7 @@ from trantrac.utils import (
     get_sheet_data,
     get_sheets_service,
     import_csv_to_sheet,
+    sanitize_csv_value,
     save_to_sheet,
 )
 
@@ -560,6 +561,107 @@ class TestImportCsvToSheet(TestCase):
         assert success is True
         assert "Importate 1 transazioni" in message
         assert "duplicate" not in message
+
+
+class TestSanitizeCsvValue:
+    def test_strips_leading_equals(self):
+        assert sanitize_csv_value("=SUM(1,2)") == "SUM(1,2)"
+
+    def test_strips_leading_plus(self):
+        assert sanitize_csv_value("+cmd|calc") == "cmd|calc"
+
+    def test_strips_leading_at(self):
+        assert sanitize_csv_value("@SUM(1)") == "SUM(1)"
+
+    def test_leaves_normal_text_unchanged(self):
+        assert sanitize_csv_value("Prelievo ATM") == "Prelievo ATM"
+
+    def test_strips_surrounding_whitespace(self):
+        assert sanitize_csv_value("  hello  ") == "hello"
+
+    def test_does_not_strip_leading_dash(self):
+        assert sanitize_csv_value("-prestito") == "-prestito"
+
+    def test_empty_string(self):
+        assert sanitize_csv_value("") == ""
+
+
+@pytest.mark.django_db
+class TestImportCsvValidations(TestCase):
+    def setUp(self):
+        self.user = self.make_user("test@example.com")
+        patcher = patch(
+            "trantrac.utils.get_existing_transaction_ids", return_value=set()
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def create_csv_file(self, content):
+        csv_bytes = content.encode("utf-8")
+        return InMemoryUploadedFile(
+            BytesIO(csv_bytes),
+            "csv_file",
+            "test.csv",
+            "text/csv",
+            len(csv_bytes),
+            "utf-8",
+        )
+
+    @patch("trantrac.utils.save_to_sheet")
+    def test_invalid_date_returns_error(self, mock_save_sheet):
+        """Invalid date format returns False with descriptive message"""
+        csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
+31-13-2025,-100.50,Test,Food,Groceries,ABC123"""
+        success, message = import_csv_to_sheet(
+            self.create_csv_file(csv_content), self.user
+        )
+        assert success is False
+        assert "Data non valida" in message
+        assert "gg/mm/aaaa" in message
+
+    @patch("trantrac.utils.save_to_sheet")
+    def test_amount_over_limit_returns_error(self, mock_save_sheet):
+        """Amount exceeding MAX_TRANSACTION_AMOUNT returns False"""
+        csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
+01/01/2025,-1500000,Test,Food,Groceries,ABC123"""
+        success, message = import_csv_to_sheet(
+            self.create_csv_file(csv_content), self.user
+        )
+        assert success is False
+        assert "Importo troppo grande" in message
+
+    @patch("trantrac.utils.save_to_sheet")
+    @patch("trantrac.models.save_category_and_sub_to_sheet")
+    def test_sanitizes_formula_injection_in_description(
+        self, mock_save_cat, mock_save_sheet
+    ):
+        """Description starting with = is sanitized before saving to sheet"""
+        mock_save_cat.return_value = True
+        mock_save_sheet.return_value = True
+        csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
+01/01/2025,-100.50,=SUM(1+2),Food,Groceries,ABC123"""
+        import_csv_to_sheet(self.create_csv_file(csv_content), self.user)
+        uscite_call = [
+            c for c in mock_save_sheet.call_args_list if c[0][1] == "USCITE"
+        ][0]
+        description = uscite_call[0][0][0][3]
+        assert not description.startswith("=")
+
+    @patch("trantrac.utils.save_to_sheet")
+    @patch("trantrac.models.save_category_and_sub_to_sheet")
+    def test_truncates_long_category_names(self, mock_save_cat, mock_save_sheet):
+        """Category names longer than 100 chars are truncated"""
+        mock_save_cat.return_value = True
+        mock_save_sheet.return_value = True
+        long_cat = "A" * 150
+        csv_content = f"""Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
+01/01/2025,-100.50,Test,{long_cat},,ABC123"""
+        import_csv_to_sheet(self.create_csv_file(csv_content), self.user)
+        from trantrac.models import Category
+
+        cat = Category.objects.filter(name__startswith="A" * 50).first()
+        assert cat is not None
+        assert len(cat.name) <= 100
 
 
 @pytest.mark.django_db

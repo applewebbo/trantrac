@@ -1,5 +1,6 @@
 import csv
 import logging
+from datetime import datetime
 from io import TextIOWrapper
 
 from google.oauth2 import service_account
@@ -10,6 +11,16 @@ logger = logging.getLogger(__name__)
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 MAX_CSV_SIZE = 2 * 1024 * 1024  # 2MB
+MAX_TEXT_FIELD_LENGTH = 100  # Match Category/Subcategory model max_length
+MAX_TRANSACTION_AMOUNT = 1_000_000
+
+
+def sanitize_csv_value(value: str) -> str:
+    """Strip one leading formula-injection char (=, +, @) from text values."""
+    value = value.strip()
+    if value and value[0] in ("=", "+", "@"):
+        return value[1:]
+    return value
 
 
 def get_sheets_service():
@@ -97,7 +108,7 @@ def import_csv_to_sheet(csv_file, user):
     file = TextIOWrapper(csv_file.file, encoding="utf-8")
     csv_reader = csv.DictReader(file)
 
-    if missing_columns := REQUIRED_COLUMNS - set(csv_reader.fieldnames):
+    if missing_columns := REQUIRED_COLUMNS - set(csv_reader.fieldnames or []):
         return (
             False,
             f"Il file CSV non contiene le seguenti colonne: {', '.join(missing_columns)}",
@@ -118,6 +129,17 @@ def import_csv_to_sheet(csv_file, user):
             skipped_count += 1
             continue
 
+        # Validate date format
+        date_str = row["Data operazione"].strip()
+        try:
+            datetime.strptime(date_str, "%d/%m/%Y")
+        except ValueError:
+            return (
+                False,
+                f"Data non valida: '{date_str}'. Formato atteso: gg/mm/aaaa.",
+            )
+
+        # Validate and parse amount
         importo = row["Importo"].replace("+", "").strip()
         try:
             importo_float = float(importo.replace(".", "").replace(",", "."))
@@ -127,7 +149,22 @@ def import_csv_to_sheet(csv_file, user):
                 "Il file CSV contiene valori non numerici nella colonna Importo.",
             )
 
-        description = row["Descrizione"]
+        if abs(importo_float) > MAX_TRANSACTION_AMOUNT:
+            return (
+                False,
+                f"Importo troppo grande: {importo}. Massimo consentito: {MAX_TRANSACTION_AMOUNT:,}€.",
+            )
+
+        # Sanitize text fields
+        description = sanitize_csv_value(row["Descrizione"])
+        categoria = sanitize_csv_value(row["Categoria"])[:MAX_TEXT_FIELD_LENGTH]
+        sottocategoria = sanitize_csv_value(row["Sottocategoria"])[
+            :MAX_TEXT_FIELD_LENGTH
+        ]
+        desc_display = (
+            (description[:47] + "...") if len(description) > 50 else description
+        )
+
         if importo_float >= 0:
             # Determine user name based on configurable keyword mappings
             description_upper = description.upper()
@@ -139,26 +176,26 @@ def import_csv_to_sheet(csv_file, user):
 
             transaction_row = [
                 display_name,
-                str(row["Data operazione"]),
+                date_str,
                 importo,
-                (description[:47] + "...") if len(description) > 50 else description,
-                row["Categoria"],
-                row["Codice identificativo"],
+                desc_display,
+                categoria,
+                codice,
             ]
             positive_values.append(transaction_row)
         else:
             transaction_row = [
                 str(user.display_name),
-                str(row["Data operazione"]),
+                date_str,
                 importo.replace("-", ""),
-                (description[:47] + "...") if len(description) > 50 else description,
-                row["Categoria"],
-                row["Sottocategoria"],
+                desc_display,
+                categoria,
+                sottocategoria,
                 "Comune",
-                row["Codice identificativo"],
+                codice,
             ]
             negative_values.append(transaction_row)
-            categories_subcategories.add((row["Categoria"], row["Sottocategoria"]))
+            categories_subcategories.add((categoria, sottocategoria))
 
     # Bulk create categories for negative transactions only
     existing_categories = {
