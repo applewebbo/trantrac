@@ -1,11 +1,11 @@
 ---
 # trantrac-c44e
 title: Add database indexes for common query patterns
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-02-22T19:54:53Z
-updated_at: 2026-02-22T19:54:53Z
+updated_at: 2026-02-24T07:05:51Z
 parent: trantrac-zm6a
 ---
 
@@ -38,11 +38,11 @@ Missing: Composite index for common query pattern `filter(user=user, created_at_
 
 ## Tasks
 
-- [ ] Add composite index to CategoryUsage: `["user", "-created_at", "subcategory"]`
-- [ ] Document that unique=True on telegram_chat_id creates index
-- [ ] Run `makemigrations` to create migration
-- [ ] Test query performance before/after
-- [ ] Consider adding index on BotTransaction.telegram_message_id
+- [x] Add composite index to CategoryUsage: `["user", "-created_at", "subcategory"]`
+- [x] Document that unique=True on telegram_chat_id creates index
+- [x] Run `makemigrations` to create migration
+- [x] Test query performance before/after
+- [x] Consider adding index on BotTransaction.telegram_message_id (not needed, no direct lookups)
 
 ## Migration
 
@@ -55,3 +55,7 @@ migrations.AddIndex(
     ),
 )
 ```
+
+## Summary of Changes
+
+Added covering index `idx_usage_user_date_sub` on CategoryUsage(user, -created_at, subcategory) to optimize the suggestions query pattern. Migration 0008 created and applied. telegram_chat_id already indexed via unique=True constraint.

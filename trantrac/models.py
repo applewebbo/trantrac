@@ -128,6 +128,11 @@ class CategoryUsage(models.Model):
             models.Index(fields=["-created_at"]),
             models.Index(fields=["category", "subcategory"]),
             models.Index(fields=["user", "-created_at"]),
+            # Covering index for filter(user, created_at__gte) + values("subcategory")
+            models.Index(
+                fields=["user", "-created_at", "subcategory"],
+                name="idx_usage_user_date_sub",
+            ),
         ]
 
     def __str__(self):
