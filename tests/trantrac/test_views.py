@@ -126,7 +126,7 @@ class TestIndexView(TestCase):
     @patch("trantrac.views.save_to_sheet")
     def test_index_post_valid_transaction(self, mock_save):
         """Test index view POST with valid transaction"""
-        mock_save.return_value = True
+        mock_save.return_value = (True, "")
 
         with self.login(username=self.user.email, password="password"):
             response = self.post(
@@ -152,7 +152,7 @@ class TestIndexView(TestCase):
     @patch("trantrac.views.save_to_sheet")
     def test_index_post_save_failure(self, mock_save):
         """Test index view POST when save_to_sheet fails"""
-        mock_save.return_value = False
+        mock_save.return_value = (False, "")
 
         with self.login(username=self.user.email, password="password"):
             response = self.post(
@@ -236,7 +236,7 @@ class TestAddCategoryView(TestCase):
     @patch("trantrac.models.save_category_and_sub_to_sheet")
     def test_add_category_post_valid(self, mock_save):
         """Test add_category view POST with valid data"""
-        mock_save.return_value = True
+        mock_save.return_value = (True, "")
 
         response = self.post("add_category", data={"name": "New Category"})
 
@@ -273,7 +273,7 @@ class TestAddSubcategoryView(TestCase):
     @patch("trantrac.models.save_category_and_sub_to_sheet")
     def test_add_subcategory_post_valid(self, mock_save):
         """Test add_subcategory view POST with valid data"""
-        mock_save.return_value = True
+        mock_save.return_value = (True, "")
 
         response = self.post(
             "add_subcategory",

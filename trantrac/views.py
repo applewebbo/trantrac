@@ -62,7 +62,7 @@ def index(request):
             ]
 
             try:
-                success = save_to_sheet(values, "USCITE")
+                success, _ = save_to_sheet(values, "USCITE")
             except Exception:
                 logger.exception("Unexpected error saving transaction to sheet")
                 success = False

@@ -92,11 +92,11 @@ class TestSaveToSheet:
         ]
         result = save_to_sheet(values, "USCITE")
 
-        assert result is True
+        assert result == (True, "")
 
     @patch("trantrac.utils.get_sheets_service")
     def test_save_to_sheet_failure(self, mock_get_service):
-        """Test save_to_sheet returns False on failure"""
+        """Test save_to_sheet returns (False, "") on failure"""
         mock_service = MagicMock()
         mock_get_service.return_value = mock_service
 
@@ -110,7 +110,7 @@ class TestSaveToSheet:
         ]
         result = save_to_sheet(values, "USCITE")
 
-        assert result is False
+        assert result == (False, "")
 
     @patch("trantrac.utils.get_sheets_service")
     def test_save_to_sheet_appends_to_correct_row(self, mock_get_service):
@@ -145,7 +145,7 @@ class TestSaveToSheet:
 
         result = save_to_sheet([["row"]], "USCITE")
 
-        assert result is False
+        assert result == (False, "")
         mock_service.close.assert_called_once()
 
 
@@ -272,7 +272,7 @@ class TestImportCsvToSheet(TestCase):
     def test_import_csv_success(self, mock_save_cat, mock_save_sheet):
         """Test successful CSV import"""
         mock_save_cat.return_value = True
-        mock_save_sheet.return_value = True
+        mock_save_sheet.return_value = (True, "")
 
         csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
 01/01/2025,-100.50,Test Transaction,Food,Groceries,ABC123
@@ -313,7 +313,7 @@ class TestImportCsvToSheet(TestCase):
     def test_import_csv_creates_categories(self, mock_save_cat, mock_save_sheet):
         """Test CSV import creates new categories"""
         mock_save_cat.return_value = True
-        mock_save_sheet.return_value = True
+        mock_save_sheet.return_value = (True, "")
 
         csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
 01/01/2025,-100.50,Test Transaction,NewCategory,NewSubcat,ABC123"""
@@ -330,7 +330,7 @@ class TestImportCsvToSheet(TestCase):
     def test_import_csv_skips_empty_subcategory(self, mock_save_cat, mock_save_sheet):
         """Test CSV import skips empty subcategory names"""
         mock_save_cat.return_value = True
-        mock_save_sheet.return_value = True
+        mock_save_sheet.return_value = (True, "")
 
         csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
 01/01/2025,-100.50,Test Transaction,Food,,ABC123"""
@@ -351,7 +351,7 @@ class TestImportCsvToSheet(TestCase):
     ):
         """Test CSV import separates positive and negative transactions"""
         mock_save_cat.return_value = True
-        mock_save_sheet.return_value = True
+        mock_save_sheet.return_value = (True, "")
 
         csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
 01/01/2025,-100.50,Expense,Food,Groceries,ABC123
@@ -370,7 +370,7 @@ class TestImportCsvToSheet(TestCase):
         from trantrac.models import UserMapping
 
         mock_save_cat.return_value = True
-        mock_save_sheet.return_value = True
+        mock_save_sheet.return_value = (True, "")
 
         UserMapping.objects.create(keyword="VIVIANA", display_name="Viviana", order=0)
         UserMapping.objects.create(keyword="ENRICO", display_name="Enrico", order=1)
@@ -402,7 +402,7 @@ class TestImportCsvToSheet(TestCase):
     def test_import_csv_skips_saldo_rows(self, mock_save_cat, mock_save_sheet):
         """Test CSV import skips rows containing 'Saldo'"""
         mock_save_cat.return_value = True
-        mock_save_sheet.return_value = True
+        mock_save_sheet.return_value = (True, "")
 
         csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
 01/01/2025,-100.50,Test Transaction,Food,Groceries,ABC123
@@ -423,7 +423,7 @@ class TestImportCsvToSheet(TestCase):
     ):
         """Test CSV import truncates descriptions longer than 50 characters"""
         mock_save_cat.return_value = True
-        mock_save_sheet.return_value = True
+        mock_save_sheet.return_value = (True, "")
 
         long_desc = "A" * 60
         csv_content = f"""Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
@@ -454,7 +454,7 @@ class TestImportCsvToSheet(TestCase):
         )
 
         mock_save_cat.return_value = True
-        mock_save_sheet.return_value = True
+        mock_save_sheet.return_value = (True, "")
 
         csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
 01/01/2025,-100.50,Test Transaction,Food,Groceries,ABC123"""
@@ -471,7 +471,7 @@ class TestImportCsvToSheet(TestCase):
     def test_import_csv_save_failure(self, mock_save_cat, mock_save_sheet):
         """Test CSV import handles save_to_sheet failure"""
         mock_save_cat.return_value = True
-        mock_save_sheet.return_value = False
+        mock_save_sheet.return_value = (False, "")
 
         csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
 01/01/2025,-100.50,Test Transaction,Food,Groceries,ABC123"""
@@ -487,7 +487,7 @@ class TestImportCsvToSheet(TestCase):
     def test_import_csv_empty_subcategory(self, mock_save_cat, mock_save_sheet):
         """Test CSV import with empty subcategory"""
         mock_save_cat.return_value = True
-        mock_save_sheet.return_value = True
+        mock_save_sheet.return_value = (True, "")
 
         csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
 01/01/2025,-100.50,Test Transaction,Food,,ABC123"""
@@ -508,7 +508,7 @@ class TestImportCsvToSheet(TestCase):
     ):
         """Test CSV import continues even if category sheet sync raises exception"""
         mock_save_cat.side_effect = Exception("Sheets API error")
-        mock_save_sheet.return_value = True
+        mock_save_sheet.return_value = (True, "")
 
         csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
 01/01/2025,-100.50,Test Transaction,Food,Groceries,ABC123"""
@@ -529,7 +529,7 @@ class TestImportCsvToSheet(TestCase):
     ):
         """Test that rows with already-imported Codice identificativo are skipped"""
         mock_save_cat.return_value = True
-        mock_save_sheet.return_value = True
+        mock_save_sheet.return_value = (True, "")
 
         csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
 01/01/2025,-100.50,Already imported,Food,Groceries,ABC123
@@ -551,7 +551,7 @@ class TestImportCsvToSheet(TestCase):
     ):
         """Test that rows with empty Codice identificativo are never skipped"""
         mock_save_cat.return_value = True
-        mock_save_sheet.return_value = True
+        mock_save_sheet.return_value = (True, "")
 
         csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
 01/01/2025,-100.50,No ID transaction,Food,Groceries,"""
@@ -696,7 +696,7 @@ class TestImportCsvValidations(TestCase):
     ):
         """Description starting with = is sanitized before saving to sheet"""
         mock_save_cat.return_value = True
-        mock_save_sheet.return_value = True
+        mock_save_sheet.return_value = (True, "")
         csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
 01/01/2025,-100.50,=SUM(1+2),Food,Groceries,ABC123"""
         import_csv_to_sheet(self.create_csv_file(csv_content), self.user)
@@ -711,7 +711,7 @@ class TestImportCsvValidations(TestCase):
     def test_truncates_long_category_names(self, mock_save_cat, mock_save_sheet):
         """Category names longer than 100 chars are truncated"""
         mock_save_cat.return_value = True
-        mock_save_sheet.return_value = True
+        mock_save_sheet.return_value = (True, "")
         long_cat = "A" * 150
         csv_content = f"""Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
 01/01/2025,-100.50,Test,{long_cat},,ABC123"""

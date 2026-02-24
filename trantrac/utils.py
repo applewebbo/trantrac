@@ -43,8 +43,8 @@ def get_spreadsheet_id():
     return GoogleSheetsSettings.get_settings().spreadsheet_id
 
 
-def save_to_sheet(values, sheet_name):
-    """Save data to Google Sheets, appending to the first empty row"""
+def save_to_sheet(values: list, sheet_name: str) -> tuple[bool, str]:
+    """Save data to Google Sheets, appending to the first empty row."""
     service = get_sheets_service()
     spreadsheet_id = get_spreadsheet_id()
 
@@ -78,10 +78,11 @@ def save_to_sheet(values, sheet_name):
         )
 
         expected_rows = len(values)
-        return result.get("updates").get("updatedRows") == expected_rows
+        saved = result.get("updates").get("updatedRows") == expected_rows
+        return saved, ""
     except Exception:
         logger.exception("Failed to save data to sheet '%s'", sheet_name)
-        return False
+        return False, ""
     finally:
         service.close()
 
@@ -133,7 +134,7 @@ def _ensure_categories_in_db(categories_subcategories: set) -> None:
             logger.exception("Failed to sync new categories/subcategories to sheet")
 
 
-def import_csv_to_sheet(csv_file, user):
+def import_csv_to_sheet(csv_file, user) -> tuple[bool, str]:
     """Import CSV file to Google Sheets separating positive and negative transactions"""
     # Import here to avoid circular import
     from trantrac.models import UserMapping
@@ -242,11 +243,11 @@ def import_csv_to_sheet(csv_file, user):
     _ensure_categories_in_db(categories_subcategories)
 
     # Save transactions to respective sheets
-    success_positive = save_to_sheet(positive_values, "ENTRATE")
-    success_negative = save_to_sheet(negative_values, "USCITE")
+    ok_positive, _ = save_to_sheet(positive_values, "ENTRATE")
+    ok_negative, _ = save_to_sheet(negative_values, "USCITE")
 
     imported_count = len(positive_values) + len(negative_values)
-    if success_positive and success_negative:
+    if ok_positive and ok_negative:
         msg = f"Importate {imported_count} transazioni"
         if skipped_count:
             msg += f", {skipped_count} duplicate saltate"
@@ -278,7 +279,7 @@ def get_existing_transaction_ids() -> set[str]:
         service.close()
 
 
-def get_sheet_data(sheet_name, range_name):
+def get_sheet_data(sheet_name: str, range_name: str) -> list | None:
     """Get data from specified sheet and range"""
     service = get_sheets_service()
     spreadsheet_id = get_spreadsheet_id()
