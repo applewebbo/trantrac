@@ -521,6 +521,27 @@ class TestImportCsvToSheet(TestCase):
 
     @patch("trantrac.utils.save_to_sheet")
     @patch("trantrac.models.save_category_and_sub_to_sheet")
+    def test_import_csv_skips_intra_file_duplicates(
+        self, mock_save_cat, mock_save_sheet
+    ):
+        """Rows with the same Codice identificativo within the same CSV are skipped"""
+        mock_save_cat.return_value = True
+        mock_save_sheet.return_value = (True, "")
+
+        csv_content = """Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
+01/01/2025,-100.50,First occurrence,Food,Groceries,SAME123
+02/01/2025,-50.00,Duplicate in file,Food,Groceries,SAME123
+03/01/2025,-30.00,Different row,Food,Groceries,OTHER456"""
+
+        csv_file = self.create_csv_file(csv_content)
+        success, message = import_csv_to_sheet(csv_file, self.user)
+
+        assert success is True
+        assert "Importate 2 transazioni" in message
+        assert "1 duplicate saltate" in message
+
+    @patch("trantrac.utils.save_to_sheet")
+    @patch("trantrac.models.save_category_and_sub_to_sheet")
     @patch(
         "trantrac.utils.get_existing_transaction_ids", return_value={"ABC123", "DEF456"}
     )

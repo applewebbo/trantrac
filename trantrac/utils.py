@@ -158,6 +158,7 @@ def import_csv_to_sheet(csv_file, user) -> tuple[bool, str]:
         )
 
     existing_ids = get_existing_transaction_ids()
+    seen_in_file: set[str] = set()
     categories_subcategories = set()
     positive_values = []
     negative_values = []
@@ -168,9 +169,11 @@ def import_csv_to_sheet(csv_file, user) -> tuple[bool, str]:
             continue
 
         codice = row["Codice identificativo"].strip()
-        if codice and codice in existing_ids:
+        if codice and (codice in existing_ids or codice in seen_in_file):
             skipped_count += 1
             continue
+        if codice:
+            seen_in_file.add(codice)
 
         # Validate date format
         date_str = row["Data operazione"].strip()
