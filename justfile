@@ -310,4 +310,9 @@ release-delete tag:
 # List active beans (excludes completed and scrapped)
 [group: 'beans']
 beans:
-    beans list --no-status completed --no-status scrapped
+    beans list --ready
+
+# List completed beans
+[group: 'beans']
+beans_completed:
+    beans list -s completed
