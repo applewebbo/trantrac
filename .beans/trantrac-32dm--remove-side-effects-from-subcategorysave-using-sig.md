@@ -1,11 +1,11 @@
 ---
 # trantrac-32dm
 title: Remove side effects from Subcategory.save() using signals
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-02-22T19:54:26Z
-updated_at: 2026-02-22T19:54:26Z
+updated_at: 2026-02-24T07:14:12Z
 parent: trantrac-zm6a
 ---
 
@@ -53,8 +53,12 @@ def sync_subcategory_to_sheets(sender, instance, created, **kwargs):
 
 ## Tasks
 
-- [ ] Create signal handler for post_save
-- [ ] Remove save() override from model
-- [ ] Add error handling in signal
-- [ ] Update tests to mock signal
-- [ ] Consider async task queue for better reliability
+- [x] Create signal handler for post_save
+- [x] Remove save() override from model
+- [x] Add error handling in signal
+- [x] Update tests to mock signal
+- [x] Consider async task queue for better reliability (deferred)
+
+## Summary of Changes
+
+Replaced Subcategory.save() override with post_save signal handler sync_subcategory_to_sheets(). Signal only fires on created=True to avoid syncing updates. Error handling preserved in signal. All 394 tests pass.

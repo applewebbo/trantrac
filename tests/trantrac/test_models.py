@@ -199,11 +199,9 @@ class TestSaveCategoryAndSubToSheet:
 
     @patch("trantrac.utils.get_sheets_service")
     def test_subcategory_save_db_succeeds_even_if_sheets_fails(self, mock_get_service):
-        """Test that DB save succeeds even if Sheets sync raises outside its try block"""
+        """Test that DB save succeeds even if Sheets sync raises in the signal handler."""
         from trantrac.models import Category, Subcategory
 
-        # get_sheets_service is called before the try block in save_category_and_sub_to_sheet
-        # so raising here causes the exception to propagate to Subcategory.save's except (lines 73-74)
         mock_get_service.side_effect = Exception("Service unavailable")
 
         category = Category.objects.create(name="TestCat")

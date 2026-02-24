@@ -64,15 +64,6 @@ class Subcategory(models.Model):
     def __str__(self):
         return self.name
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if not self.skip_sheet_save:
-            try:
-                values = [[self.category.name, self.name]]
-                save_category_and_sub_to_sheet(values)
-            except Exception:
-                logger.exception("Failed to sync subcategory '%s' to sheet", self.name)
-
 
 class Account(models.Model):
     name = models.CharField(max_length=100)
@@ -137,6 +128,17 @@ class CategoryUsage(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.category} - {self.subcategory}"
+
+
+@receiver(post_save, sender=Subcategory)
+def sync_subcategory_to_sheets(sender, instance, created, **kwargs):
+    """Sync newly created subcategories to Google Sheets."""
+    if created and not getattr(instance, "skip_sheet_save", False):
+        try:
+            values = [[instance.category.name, instance.name]]
+            save_category_and_sub_to_sheet(values)
+        except Exception:
+            logger.exception("Failed to sync subcategory '%s' to sheet", instance.name)
 
 
 class GoogleSheetsSettings(models.Model):
