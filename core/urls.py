@@ -8,6 +8,7 @@ def health_check(request):
 
 
 urlpatterns = [
+    path("", include("pwa.urls")),
     path("admin/", admin.site.urls),
     path("health/", health_check, name="health_check"),
     path("", include("trantrac.urls")),

@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "django_htmx",
     "django_tailwind_cli",
     "heroicons",
+    "pwa",
     # Internal Apps
     "trantrac",
     "users",
@@ -273,6 +274,37 @@ TAILWIND_CLI_ASSET_NAME = "tailwindcss-extra"
 TAILWIND_CLI_USE_DAISY_UI = True
 # Use custom source CSS with DaisyUI and plugins
 TAILWIND_CLI_SRC_CSS = "static/css/source.css"
+
+# PWA configuration (django-pwa)
+PWA_APP_NAME = "TranTrac"
+PWA_APP_DESCRIPTION = "Family finance tracker"
+PWA_APP_THEME_COLOR = "#059669"  # Emerald-600
+PWA_APP_BACKGROUND_COLOR = "#ffffff"
+PWA_APP_DISPLAY = "standalone"
+PWA_APP_SCOPE = "/"
+PWA_APP_START_URL = "/"
+PWA_APP_ORIENTATION = "portrait"
+PWA_APP_LANG = "it-IT"
+PWA_APP_DEBUG_MODE = False
+PWA_APP_ICONS = [
+    {
+        "src": "/static/images/icons/icon-192x192.png",
+        "sizes": "192x192",
+        "type": "image/png",
+    },
+    {
+        "src": "/static/images/icons/icon-512x512.png",
+        "sizes": "512x512",
+        "type": "image/png",
+    },
+]
+PWA_APP_ICONS_APPLE = [
+    {"src": "/static/images/icons/icon-192x192.png", "sizes": "192x192"},
+]
+PWA_APP_SPLASH_SCREEN = []
+PWA_APP_SHORTCUTS = []
+PWA_APP_SCREENSHOTS = []
+PWA_SERVICE_WORKER_PATH = BASE_DIR / "static" / "js" / "serviceworker.js"
 
 # IGNORE TYPER DEPRECATION WARNING
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="typer.core")
