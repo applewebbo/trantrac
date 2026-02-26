@@ -274,43 +274,44 @@ release-create tag previous_tag="" draft="false" prerelease="false":
     TESTS=$(echo "$COMMITS" | grep -E "^- (🧪|test|✅)" || true)
     DOCS=$(echo "$COMMITS" | grep -E "^- (📚|docs)" || true)
 
-    # Build release body
-    BODY="## What's New in {{tag}}\n\n"
+    # Build release body (NL=$'\n' ensures real newlines, safe for jq --arg encoding)
+    NL=$'\n'
+    BODY="## What's New in {{tag}}${NL}${NL}"
 
     if [ -n "$FEATURES" ]; then
-        BODY+="### 🚀 Features\n$FEATURES\n\n"
+        BODY+="### 🚀 Features${NL}$FEATURES${NL}${NL}"
     fi
 
     if [ -n "$FIXES" ]; then
-        BODY+="### 🐛 Bug Fixes\n$FIXES\n\n"
+        BODY+="### 🐛 Bug Fixes${NL}$FIXES${NL}${NL}"
     fi
 
     if [ -n "$CHORES" ]; then
-        BODY+="### 🛠️ Maintenance\n$CHORES\n\n"
+        BODY+="### 🛠️ Maintenance${NL}$CHORES${NL}${NL}"
     fi
 
     if [ -n "$TESTS" ]; then
-        BODY+="### 🧪 Testing\n$TESTS\n\n"
+        BODY+="### 🧪 Testing${NL}$TESTS${NL}${NL}"
     fi
 
     if [ -n "$DOCS" ]; then
-        BODY+="### 📖 Documentation\n$DOCS\n\n"
+        BODY+="### 📖 Documentation${NL}$DOCS${NL}${NL}"
     fi
 
-    BODY+="### 📖 Full Changelog\nhttps://codeberg.org/webbografico/trantrac/compare/${PREV_TAG}...{{tag}}"
+    BODY+="### 📖 Full Changelog${NL}https://codeberg.org/webbografico/trantrac/compare/${PREV_TAG}...{{tag}}"
 
-    # Create release via API
+    # Create release via API (use jq --arg to safely encode multiline body)
     echo "🚀 Creating release on Codeberg..."
-    curl -X POST "https://codeberg.org/api/v1/repos/webbografico/trantrac/releases" \
+    curl -s -X POST "https://codeberg.org/api/v1/repos/webbografico/trantrac/releases" \
       -H "Authorization: token ${TOKEN}" \
       -H "Content-Type: application/json" \
-      -d "{
-        \"tag_name\": \"{{tag}}\",
-        \"name\": \"Release {{tag}}\",
-        \"body\": \"${BODY}\",
-        \"draft\": {{draft}},
-        \"prerelease\": {{prerelease}}
-      }" | jq -r '"\n✓ Release created successfully!\nURL: \(.html_url)\n"'
+      -d "$(jq -n \
+        --arg tag "{{tag}}" \
+        --arg body "$BODY" \
+        --argjson draft {{draft}} \
+        --argjson prerelease {{prerelease}} \
+        '{tag_name: $tag, name: $tag, body: $body, draft: $draft, prerelease: $prerelease}'
+      )" | jq -r '"\n✓ Release created successfully!\nURL: \(.html_url)\n"'
 
 # Delete a release (use with caution!)
 [group: 'codeberg']
