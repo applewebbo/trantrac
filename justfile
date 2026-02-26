@@ -106,11 +106,26 @@ _pre-commit *args:
 # Dependencies
 # ============================================================================
 
-# Update all packages
+# Update all packages (Python deps + pre-commit hooks + JS libs)
 [group: 'dependencies']
-@update_all: lock
+@update_all: lock update_js
     uv sync --all-extras --upgrade
     uvx --with pre-commit-uv prek auto-update
+
+# Update vendored JS libraries in static/js/ to their latest versions
+[group: 'dependencies']
+update_js:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    JS_DIR="static/js"
+    echo "Updating JS libraries..."
+    curl -fsSL "https://unpkg.com/htmx.org@latest/dist/htmx.min.js" -o "$JS_DIR/htmx.min.js"
+    echo "  ✓ htmx.min.js"
+    curl -fsSL "https://unpkg.com/alpinejs@latest/dist/cdn.min.js" -o "$JS_DIR/alpine.min.js"
+    echo "  ✓ alpine.min.js"
+    curl -fsSL "https://unpkg.com/@alpinejs/collapse@latest/dist/cdn.min.js" -o "$JS_DIR/alpine-collapse.min.js"
+    echo "  ✓ alpine-collapse.min.js"
+    echo "Done!"
 
 [group: 'dependencies']
 @lock:
