@@ -1,6 +1,8 @@
 when:
   branch:
   - main
+  event:
+  - push
 
 steps:
 - name: test
@@ -26,6 +28,7 @@ steps:
   image: curlimages/curl:latest
   when:
   - status: [failure]
+    event: [push]
   commands:
   - |
     printf 'CI FAILED [%s] branch: %s\nCommit: %s\nLink: %s' \
