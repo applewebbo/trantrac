@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
 
+from trantrac.categorization import get_category_suggestions
 from trantrac.forms import CategoryForm, CsvUploadForm, SubcategoryForm, TransactionForm
 from trantrac.models import Category, CategoryUsage, MonthlyReport, Subcategory
 from trantrac.utils import (
@@ -68,11 +69,12 @@ def index(request):
                 success = False
 
             if success:
-                # Track category usage
+                # Track category usage (description used for keyword learning)
                 CategoryUsage.objects.create(
                     user=request.user,
                     category=form.cleaned_data["category"],
                     subcategory=form.cleaned_data["subcategory"],
+                    description=form.cleaned_data.get("description", ""),
                 )
                 messages.add_message(
                     request,
@@ -249,6 +251,18 @@ def refresh_categories(request):
 
     messages.add_message(request, messages.SUCCESS, message)
     return HttpResponse(status=204, headers={"HX-Redirect": reverse("index")})
+
+
+@login_required
+def suggest_categories(request):
+    """HTMX endpoint: return category suggestion badges for the given description."""
+    description = request.GET.get("description", "").strip()
+    suggestions = get_category_suggestions(request.user, description)
+    return TemplateResponse(
+        request,
+        "includes/category_suggestions.html",
+        {"suggestions": suggestions},
+    )
 
 
 @login_required

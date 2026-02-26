@@ -11,6 +11,7 @@ HTML_ADD_BUTTON = "{% include 'includes/add_category_button.html' %}"
 HTML_ADD_SUBCATEGORY_BUTTON = "{% include 'includes/add_subcategory_button.html' %}"
 HTML_QUICK_CATEGORIES_START = "{% include 'includes/quick_categories_start.html' %}"
 HTML_QUICK_CATEGORIES_END = "{% include 'includes/quick_categories_end.html' %}"
+HTML_CATEGORY_SUGGESTIONS = '<div id="category-suggestions"></div>'
 
 
 class DateInput(forms.widgets.DateInput):
@@ -101,7 +102,17 @@ class TransactionForm(forms.Form):
                     ),
                     css_class="flex flex-col md:flex-row gap-3 mb-3",
                 ),
-                Field("description", css_class="bg-base-200 dark:bg-base-300"),
+                Field(
+                    "description",
+                    css_class="bg-base-200 dark:bg-base-300",
+                    **{
+                        "hx-get": str(reverse_lazy("suggest_categories")),
+                        "hx-trigger": "keyup changed delay:400ms",
+                        "hx-target": "#category-suggestions",
+                        "hx-include": "[name='description']",
+                    },
+                ),
+                HTML(HTML_CATEGORY_SUGGESTIONS),
                 HTML(HTML_QUICK_CATEGORIES_START),
                 Div(
                     Field(

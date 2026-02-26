@@ -1,0 +1,20 @@
+{% if suggestions %}
+<div class="flex flex-wrap gap-2 mt-2 mb-1" id="category-suggestions-inner">
+  <span class="self-center text-xs text-base-content/60">Suggeriti:</span>
+  {% for s in suggestions %}
+  <button type="button"
+          class="transition-colors cursor-pointer badge badge-outline badge-primary hover:badge-primary"
+          onclick="(function(){
+            var catSel = document.getElementById('id_category');
+            catSel.value = '{{ s.category_id }}';
+            catSel.dispatchEvent(new Event('change'));
+            setTimeout(function(){
+              document.getElementById('id_subcategory').value = '{{ s.subcategory_id }}';
+            }, 220);
+          })()">
+    {{ s.subcategory_name }}
+    <span class="ml-1 text-xs opacity-60">{{ s.category_name }}</span>
+  </button>
+  {% endfor %}
+</div>
+{% endif %}

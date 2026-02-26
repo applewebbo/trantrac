@@ -109,6 +109,7 @@ class CategoryUsage(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     subcategory = models.ForeignKey(Subcategory, on_delete=models.CASCADE)
+    description = models.CharField(max_length=200, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -128,6 +129,101 @@ class CategoryUsage(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.category} - {self.subcategory}"
+
+
+class MerchantMapping(models.Model):
+    """Maps a merchant keyword to a category+subcategory pair."""
+
+    keyword = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Keyword merchant",
+        help_text="Parola chiave estratta dalla descrizione (case insensitive, es. 'esselunga')",
+    )
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        verbose_name="Categoria",
+    )
+    subcategory = models.ForeignKey(
+        Subcategory,
+        on_delete=models.CASCADE,
+        verbose_name="Sottocategoria",
+    )
+
+    class Meta:
+        verbose_name = "mappatura merchant"
+        verbose_name_plural = "mappature merchant"
+        ordering = ["keyword"]
+
+    def __str__(self):
+        return f"{self.keyword} → {self.category} / {self.subcategory}"
+
+
+class UserKeywordPreference(models.Model):
+    """Stores which category+subcategory a user associates with a description keyword."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name="Utente",
+    )
+    keyword = models.CharField(
+        max_length=100,
+        verbose_name="Keyword",
+        help_text="Prima parola significativa estratta dalla descrizione",
+    )
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        verbose_name="Categoria",
+    )
+    subcategory = models.ForeignKey(
+        Subcategory,
+        on_delete=models.CASCADE,
+        verbose_name="Sottocategoria",
+    )
+    count = models.PositiveIntegerField(default=1, verbose_name="Utilizzi")
+
+    class Meta:
+        verbose_name = "preferenza keyword"
+        verbose_name_plural = "preferenze keyword"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "keyword", "category", "subcategory"],
+                name="unique_user_keyword_category_subcategory",
+            )
+        ]
+        ordering = ["-count", "keyword"]
+
+    def __str__(self):
+        return (
+            f"{self.user}: {self.keyword} → {self.category} / {self.subcategory}"
+            f" ({self.count})"
+        )
+
+
+@receiver(post_save, sender=CategoryUsage)
+def learn_keyword_from_category_usage(sender, instance, created, **kwargs):
+    """Auto-learn keyword→category mapping from each new CategoryUsage."""
+    if not created or not instance.description:
+        return
+    from trantrac.categorization import extract_first_significant_word
+
+    keyword = extract_first_significant_word(instance.description)
+    if not keyword:
+        return
+    obj, is_new = UserKeywordPreference.objects.get_or_create(
+        user=instance.user,
+        keyword=keyword,
+        category=instance.category,
+        subcategory=instance.subcategory,
+        defaults={"count": 1},
+    )
+    if not is_new:
+        UserKeywordPreference.objects.filter(pk=obj.pk).update(
+            count=models.F("count") + 1
+        )
 
 
 @receiver(post_save, sender=Subcategory)

@@ -4,8 +4,10 @@ from trantrac.models import (
     Account,
     Category,
     GoogleSheetsSettings,
+    MerchantMapping,
     MonthlyReport,
     Subcategory,
+    UserKeywordPreference,
     UserMapping,
 )
 
@@ -87,3 +89,20 @@ class MonthlyReportAdmin(admin.ModelAdmin):
         "transaction_count_expenses",
     )
     ordering = ("-year", "-month")
+
+
+@admin.register(MerchantMapping)
+class MerchantMappingAdmin(admin.ModelAdmin):
+    list_display = ("keyword", "category", "subcategory")
+    list_filter = ("category",)
+    search_fields = ("keyword",)
+    ordering = ("keyword",)
+    autocomplete_fields = ()
+
+
+@admin.register(UserKeywordPreference)
+class UserKeywordPreferenceAdmin(admin.ModelAdmin):
+    list_display = ("user", "keyword", "category", "subcategory", "count")
+    list_filter = ("category", "user")
+    search_fields = ("keyword", "user__email")
+    ordering = ("-count", "keyword")
