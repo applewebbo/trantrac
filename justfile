@@ -50,6 +50,11 @@ report *args:
 migrate:
     uv run python manage.py migrate
 
+# Run any Django management command
+[group: 'database']
+manage *args:
+    uv run python manage.py {{args}}
+
 # ============================================================================
 # Testing
 # ============================================================================

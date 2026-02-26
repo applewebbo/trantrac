@@ -9,6 +9,10 @@ TranTrac helps families track their financial transactions by providing a simple
 ## Features
 
 - **Transaction Management**: Add, edit, and categorize financial transactions
+- **Smart Categorization**: Automatic category suggestions as you type, based on merchant keywords and personal learning
+- **PWA Support**: Install as a native app on mobile and desktop (offline-ready)
+- **Dark Mode**: Toggle between light and dark theme with persistent preference
+- **Keyboard Shortcuts**: `n` for new transaction, `?` for help overlay
 - **Telegram Bot**: Quick expense tracking via Telegram with smart category suggestions ([Setup Guide](bot.md))
 - **Google Sheets Integration**: Automatic sync of all transactions to Google Sheets
 - **CSV Import**: Bulk import transactions from bank CSV exports
@@ -20,7 +24,7 @@ TranTrac helps families track their financial transactions by providing a simple
 
 ## Tech Stack
 
-- **Backend**: Django 5.1 + Python 3.14+
+- **Backend**: Django 6.0+ + Python 3.14+
 - **Frontend**: HTMX + Tailwind CSS 4.1.2 + DaisyUI
 - **Database**: SQLite with WAL mode
 - **Server**: Granian (WSGI) with uvloop
@@ -28,12 +32,37 @@ TranTrac helps families track their financial transactions by providing a simple
 - **Google Sheets API**: Service account integration for data sync
 - **Telegram Bot**: python-telegram-bot v22+ with webhook support
 
+## PWA — Install as App
+
+TranTrac is a Progressive Web App. You can install it on any device for a native app experience:
+
+- **Android / Chrome**: tap the browser menu → *Add to Home Screen*
+- **iOS / Safari**: tap the Share button → *Add to Home Screen*
+- **Desktop / Chrome or Edge**: click the install icon in the address bar
+
+The app works offline for basic navigation and queues actions when connectivity is restored.
+
+## Smart Categorization
+
+When adding a transaction, TranTrac suggests category + subcategory based on the description you type:
+
+1. **Personal learning** — the system learns from your past choices and surfaces your most-used mappings first
+2. **Merchant library** — a pre-seeded table of common Italian merchants (Esselunga, Trenitalia, Netflix, etc.)
+
+To seed the merchant library on a fresh install:
+
+```bash
+just manage populate_merchant_mappings
+```
+
+You can also add or edit merchant mappings in the Django admin under *Mappature merchant*.
+
 ## Telegram Bot
 
 TranTrac includes a Telegram bot for quick expense tracking on the go. Features:
 
 - **Simple format**: Send `50/caffè` to record a €50 coffee expense
-- **Smart suggestions**: AI-powered category suggestions based on your history
+- **Smart suggestions**: Category suggestions based on your history
 - **Instant sync**: Transactions saved directly to Google Sheets
 - **Secure auth**: Phone number + email verification
 
@@ -61,7 +90,18 @@ just bootstrap
 just local
 ```
 
-See `justfile` for all available commands.
+### Key commands
+
+| Command | Description |
+|---|---|
+| `just local` | Dev server with Tailwind watch |
+| `just ftest` | Fast parallel tests (100% coverage required) |
+| `just lint` | Ruff + pre-commit hooks |
+| `just update_all` | Upgrade Python deps + pre-commit hooks + JS libs |
+| `just migrate` | Run database migrations |
+| `just manage <cmd>` | Run a Django management command |
+
+See `justfile` for the full list.
 
 ## Continuous Integration
 
