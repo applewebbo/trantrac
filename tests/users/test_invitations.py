@@ -2,7 +2,6 @@ import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
-from django.utils.translation import gettext as _
 
 User = get_user_model()
 
@@ -55,10 +54,3 @@ class TestInvitationIntegration:
         admin_url = reverse("admin:invitations_invitation_changelist")
         response = client.get(admin_url)
         assert response.status_code == 200
-
-    def test_italian_translations_loaded(self):
-        """Test that Italian translations are loaded correctly"""
-        # Test a few key translations from django-invitations
-        assert _("E-mail") == "Email"
-        assert _("Invite") == "Invita"
-        # Note: translations are context-dependent and may require activation

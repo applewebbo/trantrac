@@ -13,7 +13,7 @@ steps:
   - uv sync
 
       # Run tests
-  - uv run pytest tests/ --cov --cov-report=term-missing
+  - uv run pytest tests/ -n auto --reuse-db --cov --cov-report=term-missing --cov-fail-under=100
   environment:
     SECRET_KEY: test-secret-key-for-ci
     DEBUG: true
@@ -28,7 +28,12 @@ steps:
   - status: [failure]
   commands:
   - |
-    curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" -d "chat_id=${TELEGRAM_CHAT_ID}&text=CI+FAILED+%5B${CI_REPO_NAME}%5D+branch%3A+${CI_COMMIT_BRANCH}%0ACommit%3A+${CI_COMMIT_MESSAGE}%0ALink%3A+${CI_PIPELINE_URL}"
+    printf 'CI FAILED [%s] branch: %s\nCommit: %s\nLink: %s' \
+      "${CI_REPO_NAME}" "${CI_COMMIT_BRANCH}" "${CI_COMMIT_MESSAGE}" "${CI_PIPELINE_URL}" \
+      > /tmp/msg.txt
+    curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+      --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+      --data-urlencode "text@/tmp/msg.txt"
   environment:
     TELEGRAM_BOT_TOKEN:
       from_secret: telegram_bot_token
