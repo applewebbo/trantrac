@@ -38,9 +38,9 @@ class TestDarkMode(TestCase):
         self.assertContains(response, 'id="theme-icon-moon"')
         self.assertContains(response, 'id="theme-icon-sun"')
 
-    def test_emerald_and_business_themes_referenced(self):
+    def test_emerald_and_dim_themes_referenced(self):
         """The two configured themes are referenced in the toggle logic"""
         response = self._get_index()
         content = response.content.decode()
         assert "emerald" in content
-        assert "business" in content
+        assert "dim" in content

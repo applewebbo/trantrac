@@ -16,7 +16,7 @@
         <script>
             (function () {
                 var t = localStorage.getItem('theme') ||
-                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'business' : 'emerald');
+                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dim' : 'emerald');
                 document.documentElement.setAttribute('data-theme', t);
             })();
         </script>
@@ -77,12 +77,12 @@
         <script>
             function toggleTheme() {
                 var html = document.documentElement;
-                var next = html.getAttribute('data-theme') === 'business' ? 'emerald' : 'business';
+                var next = html.getAttribute('data-theme') === 'dim' ? 'emerald' : 'dim';
                 html.setAttribute('data-theme', next);
                 localStorage.setItem('theme', next);
                 var moon = document.getElementById('theme-icon-moon');
                 var sun = document.getElementById('theme-icon-sun');
-                if (next === 'business') {
+                if (next === 'dim') {
                     moon.classList.add('hidden');
                     sun.classList.remove('hidden');
                 } else {
@@ -95,7 +95,7 @@
                 var moon = document.getElementById('theme-icon-moon');
                 var sun = document.getElementById('theme-icon-sun');
                 if (moon && sun) {
-                    if (theme === 'business') {
+                    if (theme === 'dim') {
                         moon.classList.add('hidden');
                         sun.classList.remove('hidden');
                     } else {
