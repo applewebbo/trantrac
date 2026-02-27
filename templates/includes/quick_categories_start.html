@@ -32,7 +32,7 @@
            class="tab"
            :class="{ 'tab-active': activeTab === 'all' }"
            @click="activeTab = 'all'">
-            Scegli la categoria
+            Scegli<span class="hidden sm:inline"> la categoria</span>
         </a>
     </div>
 
@@ -42,7 +42,7 @@
         <div x-show="activeTab === 'recent'" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {% for item in recent_categories %}
             <button type="button"
-                    class="btn btn-sm btn-primary"
+                    class="py-2 h-auto min-h-0 leading-snug btn btn-sm btn-primary"
                     @click="selectCategory({{ item.category }}, {{ item.subcategory }})">
                 {{ item.subcategory__name }}
             </button>
@@ -55,7 +55,7 @@
         <div x-show="activeTab === 'most-used'" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {% for item in most_used_categories %}
             <button type="button"
-                    class="btn btn-sm btn-primary"
+                    class="py-2 h-auto min-h-0 leading-snug btn btn-sm btn-primary"
                     @click="selectCategory({{ item.category }}, {{ item.subcategory }})">
                 {{ item.subcategory__name }}
             </button>
