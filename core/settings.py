@@ -265,7 +265,7 @@ if env("PRODUCTION"):  # pragma: no cover
     SECURE_HSTS_PRELOAD = True
 
 # Application version (must match the current git release tag)
-APP_VERSION = "2026.6"
+APP_VERSION = "2026.6.1"
 
 # DaisyUI configuration (requires tailwind-cli-extra)
 TAILWIND_CLI_SRC_REPO = "dobicinaitis/tailwind-cli-extra"
