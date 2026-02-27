@@ -1,10 +1,8 @@
 from crispy_tailwind.tailwind import CSSContainer
 
-# Custom CSS classes with dark mode support using DaisyUI
-base_input = (
-    "bg-base-200 dark:bg-base-300 focus:outline-none border border-base-300 rounded-lg py-2 px-4 "
-    "block w-full appearance-none leading-normal text-base-content"
-)
+# DaisyUI native classes — theme-aware, no dark: hacks needed
+base_input = "input input-bordered w-full"
+base_textarea = "textarea textarea-bordered w-full"
 
 custom_styles = {
     "text": base_input,
@@ -17,7 +15,7 @@ custom_styles = {
     "multiplehidden": "",
     "file": "",
     "clearablefile": "",
-    "textarea": base_input,
+    "textarea": base_textarea,
     "date": base_input,
     "datetime": base_input,
     "time": base_input,
@@ -27,13 +25,10 @@ custom_styles = {
     "selectmultiple": "",
     "checkboxselectmultiple": "",
     "multi": "",
-    "splitdatetime": (
-        "text-base-content bg-base-200 dark:bg-base-300 focus:outline border border-base-300 "
-        "leading-normal px-4 appearance-none rounded-lg py-2 focus:outline-none mr-2"
-    ),
+    "splitdatetime": base_input,
     "splithiddendatetime": "",
     "selectdate": "",
-    "error_border": "border-red-500",
+    "error_border": "border-error",
 }
 
 CUSTOM_CSS_CONTAINER = CSSContainer(custom_styles)

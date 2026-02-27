@@ -7,11 +7,10 @@ from trantrac.crispy_config import CUSTOM_CSS_CONTAINER, base_input, custom_styl
 @pytest.mark.django_db
 class TestCrispyConfig:
     def test_base_input_contains_required_classes(self):
-        """Test base_input contains required CSS classes"""
-        assert "bg-base-200" in base_input
-        assert "dark:bg-base-300" in base_input
-        assert "border" in base_input
-        assert "rounded-lg" in base_input
+        """Test base_input uses DaisyUI native input classes"""
+        assert "input" in base_input
+        assert "input-bordered" in base_input
+        assert "w-full" in base_input
 
     def test_custom_styles_has_all_field_types(self):
         """Test custom_styles contains all standard field types"""
@@ -39,7 +38,7 @@ class TestCrispyConfig:
     def test_custom_styles_has_error_border(self):
         """Test custom_styles has error_border configuration"""
         assert "error_border" in custom_styles
-        assert "red" in custom_styles["error_border"]
+        assert custom_styles["error_border"] != ""
 
     def test_custom_css_container_is_instance_of_css_container(self):
         """Test CUSTOM_CSS_CONTAINER is instance of CSSContainer"""

@@ -87,24 +87,22 @@ class TransactionForm(forms.Form):
                             '<label class="block text-base-content text-sm font-bold mb-2">Importo</label>'
                         ),
                         HTML("""
-                            <label class="flex items-center gap-2 bg-base-200 dark:bg-base-300 border border-base-300 rounded-lg py-2 px-4">
+                            <label class="flex gap-2 items-center w-full input input-bordered">
                                 <input type="number" step="0.01" name="amount" id="id_amount"
-                                       class="grow bg-transparent focus:outline-none text-base-content" placeholder="0.00" required />
-                                {% heroicon_outline 'currency-euro' class='w-6 h-6 text-base-content' %}
+                                       class="grow bg-transparent focus:outline-none" placeholder="0.00" required />
+                                {% heroicon_outline 'currency-euro' class='w-6 h-6 opacity-50' %}
                             </label>
                         """),
                         css_class="grow",
                     ),
                     Field(
                         "date",
-                        css_class="bg-base-200 dark:bg-base-300",
                         wrapper_class="grow",
                     ),
                     css_class="flex flex-col md:flex-row gap-3 mb-3",
                 ),
                 Field(
                     "description",
-                    css_class="bg-base-200 dark:bg-base-300",
                     **{
                         "hx-get": str(reverse_lazy("suggest_categories")),
                         "hx-trigger": "keyup changed delay:400ms",
@@ -135,7 +133,7 @@ class TransactionForm(forms.Form):
                 Div(
                     Field(
                         "subcategory",
-                        css_class="bg-base-200 dark:bg-base-300",
+                        css_class="bg-base-200",
                         **{"x-bind:disabled": "!hasCategory"},
                     ),
                     HTML(
@@ -168,7 +166,7 @@ class CategoryForm(forms.ModelForm):
         self.helper.label_class = "block text-base-content text-sm font-bold mb-2"
         self.fields["name"].label = "Categoria"
         self.helper.layout = Layout(
-            Field("name", css_class="bg-base-200 dark:bg-base-300"),
+            Field("name", css_class="bg-base-200"),
             Div(
                 Button(
                     "cancel",
@@ -199,8 +197,8 @@ class SubcategoryForm(forms.ModelForm):
         self.fields["name"].label = "Sottocategoria"
         self.fields["category"].label = "Categoria"
         self.helper.layout = Layout(
-            Field("category", css_class="bg-base-200 dark:bg-base-300"),
-            Field("name", css_class="bg-base-200 dark:bg-base-300"),
+            Field("category", css_class="bg-base-200"),
+            Field("name", css_class="bg-base-200"),
             Div(
                 Button(
                     "cancel",

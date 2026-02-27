@@ -39,9 +39,28 @@ html, body, label {
   font-family: 'Roboto', sans-serif;
 }
 
+
 @media (prefers-color-scheme: dark) {
   :root {
     --radius-field: 0.5rem;
     --radius-box: 0.5rem;
   }
+}
+
+dialog {
+  display: flex;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.9);
+}
+dialog[open] {
+  display: flex;
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: inherit;
+  transition: opacity 0.2s ease-in, transform 0.1s ease-in;
+}
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(3px);
 }
