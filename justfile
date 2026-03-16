@@ -202,6 +202,21 @@ issue-label number *labels:
 issue-create title body="":
     fgj issue create -t "{{title}}" -b "{{body}}"
 
+# Edit issue title and/or body
+[group: 'codeberg']
+issue-edit number title="" body="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ARGS=""
+    [ -n "{{title}}" ] && ARGS="$ARGS -t '{{title}}'"
+    [ -n "{{body}}" ] && ARGS="$ARGS -b '{{body}}'"
+    eval fgj issue edit {{number}} $ARGS
+
+# Create a pull request from current branch to main
+[group: 'codeberg']
+pr-create title body="" base="main":
+    fgj pr create -t "{{title}}" -b "{{body}}" -B "{{base}}" -H "$(git branch --show-current)"
+
 # ============================================================================
 # Codeberg Releases
 # ============================================================================
