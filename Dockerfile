@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdk-pixbuf2.0-0 \
     libffi-dev \
     shared-mime-info \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 RUN pip install --upgrade pip uv
 RUN python -m uv venv
