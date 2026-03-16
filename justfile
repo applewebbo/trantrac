@@ -166,42 +166,41 @@ docker_down:
 # List issues (state: open|closed|all)
 [group: 'codeberg']
 issues state="open":
-    ./bin/codeberg list {{state}}
+    fgj issue list -s {{state}}
 
 # Show issue details
 [group: 'codeberg']
 issue number:
-    ./bin/codeberg show {{number}}
+    fgj issue view {{number}}
 
 # Add comment to issue
 [group: 'codeberg']
 issue-comment number text:
-    ./bin/codeberg comment {{number}} "{{text}}"
-
-# Mark a checkbox step as done in issue body
-[group: 'codeberg']
-issue-check number step:
-    ./bin/codeberg check {{number}} "{{step}}"
+    fgj issue comment {{number}} -b "{{text}}"
 
 # Close issue
 [group: 'codeberg']
 issue-close number:
-    ./bin/codeberg close {{number}}
+    fgj issue close {{number}}
 
 # Reopen issue
 [group: 'codeberg']
 issue-reopen number:
-    ./bin/codeberg reopen {{number}}
+    fgj issue edit {{number}} -s open
 
 # Add labels to issue (space-separated)
 [group: 'codeberg']
 issue-label number *labels:
-    ./bin/codeberg label {{number}} {{labels}}
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for label in {{labels}}; do
+        fgj issue edit {{number}} --add-label "$label"
+    done
 
 # Create new issue
 [group: 'codeberg']
 issue-create title body="":
-    ./bin/codeberg create "{{title}}" "{{body}}"
+    fgj issue create -t "{{title}}" -b "{{body}}"
 
 # ============================================================================
 # Codeberg Releases
@@ -210,24 +209,12 @@ issue-create title body="":
 # List all releases
 [group: 'codeberg']
 release-list:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    TOKEN=$(grep "^CODEBERG_API_TOKEN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'")
-    echo -e "TAG\tNAME\tPUBLISHED\tDRAFT"
-    curl -s "https://codeberg.org/api/v1/repos/webbografico/trantrac/releases" \
-      -H "Authorization: token ${TOKEN}" | \
-      jq -r '.[] | "\(.tag_name)\t\(.name)\t\(.published_at)\t\(.draft)"' | \
-      column -t -s $'\t'
+    fgj release list
 
 # Show release details
 [group: 'codeberg']
 release-show tag:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    TOKEN=$(grep "^CODEBERG_API_TOKEN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'")
-    curl -s "https://codeberg.org/api/v1/repos/webbografico/trantrac/releases/tags/{{tag}}" \
-      -H "Authorization: token ${TOKEN}" | \
-      jq -r '"\nTag: \(.tag_name)\nName: \(.name)\nPublished: \(.published_at)\nDraft: \(.draft)\nPrerelease: \(.prerelease)\n\nURL: \(.html_url)\n\nBody:\n\(.body)\n"'
+    fgj release view {{tag}}
 
 # Create a new release (auto-creates tag, pushes it, and generates notes from commits)
 [group: 'codeberg']
@@ -252,9 +239,6 @@ release-create tag previous_tag="" draft="false" prerelease="false":
         echo "✓ Tag {{tag}} pushed to origin"
     fi
 
-    # Get token
-    TOKEN=$(grep "^CODEBERG_API_TOKEN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'")
-
     # Determine previous tag if not provided
     if [ "{{previous_tag}}" = "" ]; then
         PREV_TAG=$(git tag --sort=-version:refname | grep -v "{{tag}}" | head -1)
@@ -274,7 +258,7 @@ release-create tag previous_tag="" draft="false" prerelease="false":
     TESTS=$(echo "$COMMITS" | grep -E "^- (🧪|test|✅)" || true)
     DOCS=$(echo "$COMMITS" | grep -E "^- (📚|docs)" || true)
 
-    # Build release body (NL=$'\n' ensures real newlines, safe for jq --arg encoding)
+    # Build release body
     NL=$'\n'
     BODY="## What's New in {{tag}}${NL}${NL}"
 
@@ -300,29 +284,29 @@ release-create tag previous_tag="" draft="false" prerelease="false":
 
     BODY+="### 📖 Full Changelog${NL}https://codeberg.org/webbografico/trantrac/compare/${PREV_TAG}...{{tag}}"
 
-    # Create release via API (use jq --arg to safely encode multiline body)
+    # Write notes to temp file to avoid shell escaping issues
+    NOTES_FILE=$(mktemp)
+    echo "$BODY" > "$NOTES_FILE"
+
+    # Create release via fgj
     echo "🚀 Creating release on Codeberg..."
-    curl -s -X POST "https://codeberg.org/api/v1/repos/webbografico/trantrac/releases" \
-      -H "Authorization: token ${TOKEN}" \
-      -H "Content-Type: application/json" \
-      -d "$(jq -n \
-        --arg tag "{{tag}}" \
-        --arg body "$BODY" \
-        --argjson draft {{draft}} \
-        --argjson prerelease {{prerelease}} \
-        '{tag_name: $tag, name: $tag, body: $body, draft: $draft, prerelease: $prerelease}'
-      )" | jq -r '"\n✓ Release created successfully!\nURL: \(.html_url)\n"'
+    DRAFT_FLAG=""
+    PRERELEASE_FLAG=""
+    [ "{{draft}}" = "true" ] && DRAFT_FLAG="--draft"
+    [ "{{prerelease}}" = "true" ] && PRERELEASE_FLAG="--prerelease"
+
+    fgj release create "{{tag}}" \
+        --title "{{tag}}" \
+        --notes-file "$NOTES_FILE" \
+        $DRAFT_FLAG $PRERELEASE_FLAG
+
+    rm -f "$NOTES_FILE"
+    echo "✓ Release {{tag}} created successfully!"
 
 # Delete a release (use with caution!)
 [group: 'codeberg']
 release-delete tag:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    TOKEN=$(grep "^CODEBERG_API_TOKEN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'")
-    echo "⚠️  Deleting release {{tag}}..."
-    curl -X DELETE "https://codeberg.org/api/v1/repos/webbografico/trantrac/releases/tags/{{tag}}" \
-      -H "Authorization: token ${TOKEN}"
-    echo "✓ Release {{tag}} deleted"
+    fgj release delete {{tag}}
 
 # ============================================================================
 # Beans
