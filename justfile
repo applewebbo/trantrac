@@ -297,7 +297,8 @@ release-create tag previous_tag="" draft="false" prerelease="false":
         BODY+="### 📖 Documentation${NL}$DOCS${NL}${NL}"
     fi
 
-    BODY+="### 📖 Full Changelog${NL}https://codeberg.org/webbografico/trantrac/compare/${PREV_TAG}...{{tag}}"
+    REPO_PATH=$(git remote get-url origin | sed 's|.*codeberg.org[:/]\(.*\)\.git|\1|;s|.*codeberg.org[:/]\(.*\)|\1|')
+    BODY+="### 📖 Full Changelog${NL}https://codeberg.org/${REPO_PATH}/compare/${PREV_TAG}...{{tag}}"
 
     # Write notes to temp file to avoid shell escaping issues
     NOTES_FILE=$(mktemp)
