@@ -16,6 +16,7 @@ env = environ.Env(
     CSRF_TRUSTED_ORIGINS=(str, []),
     DEBUG=(bool, False),
     PRODUCTION=(bool, False),
+    PREPEND_WWW=(bool, False),
 )
 
 # Quick-start development settings - unsuitable for production
@@ -256,6 +257,7 @@ if env("PRODUCTION"):  # pragma: no cover
     CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS").split(",")
     MIDDLEWARE.insert(2, "whitenoise.middleware.WhiteNoiseMiddleware")
 
+    PREPEND_WWW = env("PREPEND_WWW")
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True

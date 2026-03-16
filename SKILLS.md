@@ -110,24 +110,21 @@ Custom skills available for common Django workflows. Use these for automated qua
 
 **Critical:** Ensures linear history on main with fast-forward only merges
 
-### `/deploy` - Deploy to Production (Caprover)
+### `/deploy` - Deploy to Production (Coolify)
 **Use when:** Ready to deploy to production after a release or hotfix
 
 **What it does:**
 1. Validates branch (warns if not on `main`), clean working tree and remote sync
 2. Runs quick health check (tests, lint, Django check, migrations)
-3. Asks which deploy mode to use:
-   - `--default`: deploy current branch directly (fast, no prompts)
-   - interactive: choose app/branch from Caprover CLI
-4. Shows confirmation summary before deploying
-5. Runs `caprover deploy` streaming output in real time
-6. Verifies the app is up with an HTTP health check
-7. Displays deploy summary
+3. Shows confirmation summary before deploying
+4. Triggers Coolify webhook to start the deployment
+5. Displays deploy summary and asks user to verify the app is up
 
-**App:** `trantrac` on Caprover
+**Platform:** Coolify (webhook-based deploy)
 **entrypoint.sh:** `migrate → tailwind build → collectstatic → granian`
+**Credentials needed in `.env`:** `COOLIFY_WEBHOOK_URL`, `COOLIFY_WEBHOOK_TOKEN`
 
-**Note:** Caprover keeps the previous image on failure — no downtime on broken deploys
+**Note:** Coolify keeps previous deployments — rollback via Coolify dashboard if needed
 
 ### `/deps-update` - Safe Dependency Updates
 **Use when:** Weekly maintenance, security patches, package upgrades
@@ -250,6 +247,6 @@ Custom skills available for common Django workflows. Use these for automated qua
 4. **Backup before risk**: Use `/db-backup` before any potentially destructive operation
 5. **Update deps weekly**: Use `/deps-update` to keep dependencies secure and current
 6. **Clean monthly**: Use `/cleanup` to keep the project lean and the database optimized
-7. **Deploy with `/deploy`**: Never run `caprover deploy` manually — the skill validates everything first
+7. **Deploy with `/deploy`**: Never trigger the Coolify webhook manually — the skill validates everything first
 8. **Trust the automation**: Skills handle edge cases and provide comprehensive checks
 9. **Follow the prompts**: Skills ask for confirmation when needed - review carefully
