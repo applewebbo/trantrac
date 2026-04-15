@@ -6,15 +6,13 @@ when:
 
 steps:
 - name: test
-  image: ghcr.io/astral-sh/uv:python3.14-bookworm-slim
+  image: ghcr.io/astral-sh/uv:bookworm-slim
   commands:
       # Install WeasyPrint system dependencies
   - apt-get update && apt-get install -y --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info && rm -rf /var/lib/apt/lists/*
 
-      # Update uv to latest to support newest Python patch releases
-  - uv self update
-
-      # Install dependencies
+      # Install Python and dependencies
+  - uv python install
   - uv sync
 
       # Run tests
