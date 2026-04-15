@@ -41,6 +41,11 @@ runbot:
 report *args:
     DYLD_LIBRARY_PATH=/opt/homebrew/lib uv run python manage.py generate_monthly_report {{args}}
 
+# Send Telegram reminder (--type monthly|weekly)
+[group: 'dev']
+remind *args:
+    DYLD_LIBRARY_PATH=/opt/homebrew/lib uv run python manage.py send_telegram_reminder {{args}}
+
 # ============================================================================
 # Database
 # ============================================================================

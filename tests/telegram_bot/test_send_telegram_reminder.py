@@ -1,0 +1,174 @@
+import calendar
+from datetime import date
+from io import StringIO
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from django.core.management import call_command
+
+from users.models import User
+
+
+def make_approved_user(email="user@example.com", chat_id=123456):
+    user = User.objects.create_user(email=email, password="password")
+    user.telegram_chat_id = chat_id
+    user.telegram_status = User.TELEGRAM_STATUS_APPROVED
+    user.save()
+    return user
+
+
+@pytest.mark.django_db
+class TestSendTelegramReminderCommand:
+    def test_no_approved_users(self):
+        out = StringIO()
+        call_command(
+            "send_telegram_reminder", reminder_type="monthly", force=True, stdout=out
+        )
+        assert "No approved Telegram users found" in out.getvalue()
+
+    def test_dry_run_monthly(self):
+        make_approved_user()
+        out = StringIO()
+        call_command(
+            "send_telegram_reminder",
+            reminder_type="monthly",
+            dry_run=True,
+            force=True,
+            stdout=out,
+        )
+        output = out.getvalue()
+        assert "[dry-run]" in output
+        assert "monthly" in output
+
+    def test_dry_run_weekly(self):
+        make_approved_user()
+        out = StringIO()
+        call_command(
+            "send_telegram_reminder",
+            reminder_type="weekly",
+            dry_run=True,
+            stdout=out,
+        )
+        output = out.getvalue()
+        assert "[dry-run]" in output
+        assert "weekly" in output
+
+    @patch("telegram_bot.management.commands.send_telegram_reminder.Bot")
+    def test_sends_monthly_reminder(self, mock_bot_class):
+        make_approved_user(chat_id=111)
+        make_approved_user(email="other@example.com", chat_id=222)
+
+        mock_bot = MagicMock()
+        mock_bot.send_message = AsyncMock()
+        mock_bot.__aenter__ = AsyncMock(return_value=mock_bot)
+        mock_bot.__aexit__ = AsyncMock(return_value=False)
+        mock_bot_class.return_value = mock_bot
+
+        out = StringIO()
+        call_command(
+            "send_telegram_reminder", reminder_type="monthly", force=True, stdout=out
+        )
+
+        assert mock_bot.send_message.call_count == 2
+        output = out.getvalue()
+        assert "2 sent, 0 failed" in output
+
+    @patch("telegram_bot.management.commands.send_telegram_reminder.Bot")
+    def test_sends_weekly_reminder(self, mock_bot_class):
+        make_approved_user(chat_id=333)
+
+        mock_bot = MagicMock()
+        mock_bot.send_message = AsyncMock()
+        mock_bot.__aenter__ = AsyncMock(return_value=mock_bot)
+        mock_bot.__aexit__ = AsyncMock(return_value=False)
+        mock_bot_class.return_value = mock_bot
+
+        out = StringIO()
+        call_command("send_telegram_reminder", reminder_type="weekly", stdout=out)
+
+        assert mock_bot.send_message.call_count == 1
+        call_args = mock_bot.send_message.call_args
+        assert "settimanale" in call_args.kwargs["text"]
+        assert "1 sent, 0 failed" in out.getvalue()
+
+    @patch("telegram_bot.management.commands.send_telegram_reminder.Bot")
+    def test_monthly_message_content(self, mock_bot_class):
+        make_approved_user(chat_id=444)
+
+        mock_bot = MagicMock()
+        mock_bot.send_message = AsyncMock()
+        mock_bot.__aenter__ = AsyncMock(return_value=mock_bot)
+        mock_bot.__aexit__ = AsyncMock(return_value=False)
+        mock_bot_class.return_value = mock_bot
+
+        call_command("send_telegram_reminder", reminder_type="monthly", force=True)
+
+        call_args = mock_bot.send_message.call_args
+        assert call_args.kwargs["chat_id"] == 444
+        assert "ultimo giorno del mese" in call_args.kwargs["text"]
+
+    @patch("telegram_bot.management.commands.send_telegram_reminder.Bot")
+    def test_handles_send_failure(self, mock_bot_class):
+        make_approved_user(chat_id=555)
+
+        mock_bot = MagicMock()
+        mock_bot.send_message = AsyncMock(side_effect=Exception("Telegram error"))
+        mock_bot.__aenter__ = AsyncMock(return_value=mock_bot)
+        mock_bot.__aexit__ = AsyncMock(return_value=False)
+        mock_bot_class.return_value = mock_bot
+
+        out = StringIO()
+        call_command("send_telegram_reminder", reminder_type="weekly", stdout=out)
+
+        assert "0 sent, 1 failed" in out.getvalue()
+
+    def test_monthly_skips_if_not_last_day(self):
+        make_approved_user(chat_id=666)
+        today = date.today()
+        last_day = calendar.monthrange(today.year, today.month)[1]
+        # Only run this test when today is NOT the last day
+        if today.day == last_day:
+            pytest.skip("Today is the last day of the month")
+
+        out = StringIO()
+        call_command("send_telegram_reminder", reminder_type="monthly", stdout=out)
+        assert "Skipping" in out.getvalue()
+
+    @patch("telegram_bot.management.commands.send_telegram_reminder.Bot")
+    def test_monthly_force_skips_date_check(self, mock_bot_class):
+        make_approved_user(chat_id=777)
+        today = date.today()
+        last_day = calendar.monthrange(today.year, today.month)[1]
+        if today.day == last_day:
+            pytest.skip("Today is already the last day of the month")
+
+        mock_bot = MagicMock()
+        mock_bot.send_message = AsyncMock()
+        mock_bot.__aenter__ = AsyncMock(return_value=mock_bot)
+        mock_bot.__aexit__ = AsyncMock(return_value=False)
+        mock_bot_class.return_value = mock_bot
+
+        out = StringIO()
+        call_command(
+            "send_telegram_reminder", reminder_type="monthly", force=True, stdout=out
+        )
+        assert mock_bot.send_message.call_count == 1
+
+    def test_weekly_no_date_check(self):
+        """Weekly reminders are not subject to date checks."""
+        out = StringIO()
+        call_command("send_telegram_reminder", reminder_type="weekly", stdout=out)
+        assert "Skipping" not in out.getvalue()
+        assert "No approved Telegram users found" in out.getvalue()
+
+    def test_skips_users_without_chat_id(self):
+        user = User.objects.create_user(email="nochat@example.com", password="password")
+        user.telegram_status = User.TELEGRAM_STATUS_APPROVED
+        user.telegram_chat_id = None
+        user.save()
+
+        out = StringIO()
+        call_command(
+            "send_telegram_reminder", reminder_type="monthly", force=True, stdout=out
+        )
+        assert "No approved Telegram users found" in out.getvalue()
