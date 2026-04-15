@@ -1199,7 +1199,7 @@ dependencies = [
 ]
 name = "trantrac"
 source = {virtual = "."}
-version = "2026.6.4"
+version = "2026.6.5"
 
 [package.dev-dependencies]
 dev = [
