@@ -40,7 +40,7 @@ description = "Transaction to Google Sheets"
 name = "trantrac"
 readme = "README.md"
 requires-python = ">=3.14"
-version = "2026.7"
+version = "2026.7.1"
 
 [tool.bandit]
 exclude_dirs = []
