@@ -1,7 +1,6 @@
 """Management command to send Telegram reminders to approved users."""
 
 import asyncio
-import calendar
 import logging
 from datetime import date
 
@@ -14,9 +13,13 @@ from users.models import User
 logger = logging.getLogger(__name__)
 
 MESSAGES = {
-    "monthly": (
-        "📅 Reminder mensile: oggi è l'ultimo giorno del mese!\n"
-        "Ricordati di inserire tutte le spese prima della mezzanotte. 💸"
+    "monthly_user": (
+        "📅 Reminder mensile: è il primo del mese!\n"
+        "Ricordati di inserire le spese del mese scorso entro 3 giorni. 💸"
+    ),
+    "monthly_admin": (
+        "📅 Reminder mensile: è il primo del mese!\n"
+        "Ricordati di importare il CSV della banca entro il 5 del mese. 📂"
     ),
     "weekly": (
         "📋 Reminder settimanale: è iniziata una nuova settimana!\n"
@@ -34,7 +37,7 @@ class Command(BaseCommand):
             dest="reminder_type",
             choices=["monthly", "weekly"],
             required=True,
-            help="Type of reminder: 'monthly' (last day of month) or 'weekly' (Monday)",
+            help="Type of reminder: 'monthly' (1st of month) or 'weekly' (Monday)",
         )
         parser.add_argument(
             "--dry-run",
@@ -44,17 +47,16 @@ class Command(BaseCommand):
         parser.add_argument(
             "--force",
             action="store_true",
-            help="Send even if today is not the last day of the month (monthly only)",
+            help="Send even if today is not the 1st of the month (monthly only)",
         )
 
     def handle(self, *args, **options):
         if options["reminder_type"] == "monthly" and not options.get("force"):
             today = date.today()
-            last_day = calendar.monthrange(today.year, today.month)[1]
-            if today.day != last_day:
+            if today.day != 1:
                 self.stdout.write(
                     self.style.WARNING(
-                        f"Today is {today.day}, not the last day of the month ({last_day}). Skipping."
+                        f"Today is {today.day}, not the 1st of the month. Skipping."
                     )
                 )
                 return
@@ -71,8 +73,6 @@ class Command(BaseCommand):
         reminder_type = options["reminder_type"]
         dry_run = options["dry_run"]
 
-        message = MESSAGES[reminder_type]
-
         if not approved_users:
             self.stdout.write(self.style.WARNING("No approved Telegram users found."))
             logger.info(
@@ -81,12 +81,24 @@ class Command(BaseCommand):
             return
 
         if dry_run:
-            self.stdout.write(
-                self.style.WARNING(
-                    f"[dry-run] Would send {reminder_type} reminder to "
-                    f"{len(approved_users)} user(s):\n{message}"
+            admin_count = sum(1 for u in approved_users if u.is_staff or u.is_superuser)
+            user_count = len(approved_users) - admin_count
+            if reminder_type == "monthly":
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"[dry-run] Would send monthly reminder to "
+                        f"{user_count} user(s) and {admin_count} admin(s):\n"
+                        f"User message: {MESSAGES['monthly_user']}\n"
+                        f"Admin message: {MESSAGES['monthly_admin']}"
+                    )
                 )
-            )
+            else:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"[dry-run] Would send {reminder_type} reminder to "
+                        f"{len(approved_users)} user(s):\n{MESSAGES['weekly']}"
+                    )
+                )
             return
 
         bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
@@ -95,6 +107,15 @@ class Command(BaseCommand):
 
         async with bot:
             for user in approved_users:
+                if reminder_type == "monthly":
+                    message = (
+                        MESSAGES["monthly_admin"]
+                        if (user.is_staff or user.is_superuser)
+                        else MESSAGES["monthly_user"]
+                    )
+                else:
+                    message = MESSAGES["weekly"]
+
                 try:
                     await bot.send_message(chat_id=user.telegram_chat_id, text=message)
                     sent += 1
