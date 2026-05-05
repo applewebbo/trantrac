@@ -10,7 +10,9 @@ from trantrac.models import (
     Category,
     CategoryUsage,
     GoogleSheetsSettings,
+    IncomeParsingConfig,
     MonthlyReport,
+    StandardIncomeKeyword,
     Subcategory,
 )
 
@@ -413,3 +415,50 @@ class TestMonthlyReportModel(TestCase):
         assert report.month_name == "Gennaio"
         report.month = 12
         assert report.month_name == "Dicembre"
+
+
+@pytest.mark.django_db
+class TestIncomeParsingConfig:
+    def test_str_active(self):
+        config = IncomeParsingConfig(enabled=True, trigger_string="DA ")
+        assert "attivo" in str(config)
+        assert "DA " in str(config)
+
+    def test_str_inactive(self):
+        config = IncomeParsingConfig(enabled=False, trigger_string="DA ")
+        assert "disattivo" in str(config)
+
+    def test_get_config_returns_none_when_empty(self):
+        assert IncomeParsingConfig.get_config() is None
+
+    def test_get_config_returns_instance(self):
+        IncomeParsingConfig.objects.create(enabled=True, trigger_string="DA ")
+        config = IncomeParsingConfig.get_config()
+        assert config is not None
+        assert config.enabled is True
+
+    def test_singleton_raises_on_second_create(self):
+        IncomeParsingConfig.objects.create(enabled=True, trigger_string="DA ")
+        with pytest.raises(ValidationError):
+            IncomeParsingConfig(enabled=False, trigger_string="DA ").save()
+
+
+@pytest.mark.django_db
+class TestStandardIncomeKeyword:
+    def test_str(self):
+        kw = StandardIncomeKeyword(keyword="VOCIRETRIB.")
+        assert str(kw) == "VOCIRETRIB."
+
+    def test_create_and_retrieve(self):
+        StandardIncomeKeyword.objects.create(
+            keyword="SPESE COMUNI", description="Spese condivise"
+        )
+        obj = StandardIncomeKeyword.objects.get(keyword="SPESE COMUNI")
+        assert obj.description == "Spese condivise"
+
+    def test_keyword_unique(self):
+        from django.db import IntegrityError
+
+        StandardIncomeKeyword.objects.create(keyword="VOCIRETRIB.")
+        with pytest.raises(IntegrityError):
+            StandardIncomeKeyword.objects.create(keyword="VOCIRETRIB.")

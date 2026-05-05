@@ -4,8 +4,10 @@ from trantrac.models import (
     Account,
     Category,
     GoogleSheetsSettings,
+    IncomeParsingConfig,
     MerchantMapping,
     MonthlyReport,
+    StandardIncomeKeyword,
     Subcategory,
     UserKeywordPreference,
     UserMapping,
@@ -100,9 +102,69 @@ class MerchantMappingAdmin(admin.ModelAdmin):
     autocomplete_fields = ()
 
 
+@admin.register(IncomeParsingConfig)
+class IncomeParsingConfigAdmin(admin.ModelAdmin):
+    list_display = ("enabled", "trigger_string")
+
+    def has_add_permission(self, request):
+        return not IncomeParsingConfig.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(StandardIncomeKeyword)
+class StandardIncomeKeywordAdmin(admin.ModelAdmin):
+    list_display = ("keyword", "description")
+    search_fields = ("keyword",)
+    ordering = ("keyword",)
+
+
 @admin.register(UserKeywordPreference)
 class UserKeywordPreferenceAdmin(admin.ModelAdmin):
     list_display = ("user", "keyword", "category", "subcategory", "count")
     list_filter = ("category", "user")
     search_fields = ("keyword", "user__email")
     ordering = ("-count", "keyword")
+
+
+# ── Admin app-list reorganization ──────────────────────────────────────────
+# Move report-related models out of the generic "Trantrac" section and into
+# a dedicated "Report" section, without requiring a custom AdminSite or
+# proxy models.
+
+_REPORT_MODELS = {"monthlyreport", "incomeparsingconfig", "standardincomekeyword"}
+
+_original_get_app_list = admin.AdminSite.get_app_list
+
+
+def _get_app_list_with_report_section(self, request, app_label=None):
+    app_list = _original_get_app_list(self, request, app_label)
+
+    report_models = []
+    for app in app_list:
+        remaining = []
+        for model in app["models"]:
+            if model["object_name"].lower() in _REPORT_MODELS:
+                report_models.append(model)
+            else:
+                remaining.append(model)
+        app["models"] = remaining
+
+    app_list = [app for app in app_list if app["models"]]
+
+    if report_models:
+        app_list.append(
+            {
+                "name": "Report",
+                "app_label": "report",
+                "app_url": "",
+                "has_module_perms": True,
+                "models": sorted(report_models, key=lambda m: m["name"]),
+            }
+        )
+
+    return app_list
+
+
+admin.AdminSite.get_app_list = _get_app_list_with_report_section

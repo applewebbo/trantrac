@@ -1,5 +1,6 @@
 import csv
 import logging
+import re
 from datetime import datetime
 from io import TextIOWrapper
 
@@ -13,6 +14,26 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 MAX_CSV_SIZE = 2 * 1024 * 1024  # 2MB
 MAX_TEXT_FIELD_LENGTH = 100  # Match Category/Subcategory model max_length
 MAX_TRANSACTION_AMOUNT = 1_000_000
+
+
+def smart_truncate(
+    description: str, max_len: int = 50, trigger: str | None = None
+) -> str:
+    """Truncate description to max_len, preserving the suffix after the last whole-word trigger."""
+    if len(description) <= max_len:
+        return description
+    if trigger:
+        word = re.escape(trigger.strip())
+        matches = list(re.finditer(rf"\b{word}\b", description, re.IGNORECASE))
+        if matches:
+            idx = matches[-1].start()
+            suffix = description[idx:]
+            separator = "... "
+            available = max_len - len(separator) - len(suffix)
+            if available > 0:
+                return description[:available].rstrip() + separator + suffix
+            return separator.rstrip() + " " + suffix
+    return description[:47] + "..."
 
 
 def sanitize_csv_value(value: str) -> str:
@@ -137,7 +158,14 @@ def _ensure_categories_in_db(categories_subcategories: set) -> None:
 def import_csv_to_sheet(csv_file, user) -> tuple[bool, str]:
     """Import CSV file to Google Sheets separating positive and negative transactions"""
     # Import here to avoid circular import
-    from trantrac.models import UserMapping
+    from trantrac.models import IncomeParsingConfig, UserMapping
+
+    parsing_config = IncomeParsingConfig.get_config()
+    income_trigger = (
+        parsing_config.trigger_string
+        if parsing_config and parsing_config.enabled
+        else None
+    )
 
     REQUIRED_COLUMNS = {
         "Data operazione",
@@ -207,11 +235,8 @@ def import_csv_to_sheet(csv_file, user) -> tuple[bool, str]:
         sottocategoria = sanitize_csv_value(row["Sottocategoria"])[
             :MAX_TEXT_FIELD_LENGTH
         ]
-        desc_display = (
-            (description[:47] + "...") if len(description) > 50 else description
-        )
-
         if importo_float >= 0:
+            desc_display = smart_truncate(description, trigger=income_trigger)
             # Determine user name based on configurable keyword mappings
             description_upper = description.upper()
             display_name = "Altro"
@@ -230,6 +255,7 @@ def import_csv_to_sheet(csv_file, user) -> tuple[bool, str]:
             ]
             positive_values.append(transaction_row)
         else:
+            desc_display = smart_truncate(description)
             transaction_row = [
                 str(user.display_name),
                 date_str,

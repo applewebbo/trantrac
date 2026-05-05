@@ -53,3 +53,31 @@ class TestGoogleSheetsSettingsAdmin(TestCase):
         # With obj
         settings = GoogleSheetsSettings.get_settings()
         assert self.admin.has_delete_permission(request, settings) is False
+
+
+class TestAdminAppListReorganization:
+    """Test the custom get_app_list that groups report models into a 'Report' section."""
+
+    def test_no_report_models_skips_report_section(self):
+        from django.contrib.admin import AdminSite
+        from trantrac.admin import _get_app_list_with_report_section
+
+        site = AdminSite()
+        # Simulate app list with no report models
+        fake_app_list = [
+            {
+                "name": "Trantrac",
+                "app_label": "trantrac",
+                "app_url": "/admin/trantrac/",
+                "has_module_perms": True,
+                "models": [{"object_name": "Category", "name": "Categories"}],
+            }
+        ]
+
+        from unittest.mock import patch
+
+        with patch("trantrac.admin._original_get_app_list", return_value=fake_app_list):
+            result = _get_app_list_with_report_section(site, None)
+
+        app_labels = [app["app_label"] for app in result]
+        assert "report" not in app_labels

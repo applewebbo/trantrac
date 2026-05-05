@@ -1,3 +1,4 @@
+import re
 from decimal import Decimal, InvalidOperation
 
 from trantrac.date_utils import parse_date as parse_italian_date
@@ -7,11 +8,13 @@ from trantrac.utils import get_sheet_data
 ENTRATE_COL_USER = 0
 ENTRATE_COL_DATE = 1
 ENTRATE_COL_AMOUNT = 2
+ENTRATE_COL_DESCRIPTION = 3
 
 # Column indices for USCITE sheet rows
-USCITE_COL_USER = 6  # "Conto" column: Comune / Viviana / Enrico
+USCITE_COL_USER = 6
 USCITE_COL_DATE = 1
 USCITE_COL_AMOUNT = 2
+USCITE_COL_DESCRIPTION = 3
 USCITE_COL_CATEGORY = 4
 
 
@@ -78,11 +81,114 @@ def fetch_sheet_transactions(sheet_name: str) -> list[list] | None:
     return get_sheet_data(sheet_name, "A2:Z")
 
 
+def extract_da_label(description: str, trigger_string: str) -> str | None:
+    """Find last whole-word occurrence of trigger_string; return stripped text after it, or None."""
+    if not description or not trigger_string:
+        return None
+    word = re.escape(trigger_string.strip())
+    matches = list(re.finditer(rf"\b{word}\b", description, re.IGNORECASE))
+    if not matches:
+        return None
+    extracted = description[matches[-1].end() :].strip()
+    return extracted or None
+
+
+def is_standard_income(description: str, standard_keywords: list[str]) -> bool:
+    """Return True if description contains any standard keyword (case-insensitive)."""
+    if not standard_keywords:
+        return False
+    desc_upper = description.upper()
+    return any(kw.upper() in desc_upper for kw in standard_keywords)
+
+
+def build_income_by_user(
+    income_rows: list,
+    parsing_enabled: bool,
+    trigger_string: str,
+    standard_keywords: list[str],
+) -> dict:
+    """
+    Build income dict grouped by user with standard/extra breakdown.
+
+    Returns:
+        {user: {"total": Decimal, "standard": [entries], "extra": [entries]}}
+    where each entry is {"label": str, "amount": Decimal, "date": str}
+    """
+    result: dict = {}
+    for row in income_rows:
+        if len(row) <= ENTRATE_COL_AMOUNT:
+            continue
+        user = row[ENTRATE_COL_USER].strip() if row[ENTRATE_COL_USER] else "Sconosciuto"
+        amount = parse_italian_amount(row[ENTRATE_COL_AMOUNT])
+        date = row[ENTRATE_COL_DATE] if len(row) > ENTRATE_COL_DATE else ""
+        description = (
+            row[ENTRATE_COL_DESCRIPTION] if len(row) > ENTRATE_COL_DESCRIPTION else ""
+        )
+
+        label = description
+        if parsing_enabled and trigger_string and description:
+            extracted = extract_da_label(description, trigger_string)
+            if extracted:
+                label = extracted
+
+        entry_type = (
+            "standard"
+            if is_standard_income(description, standard_keywords)
+            else "extra"
+        )
+
+        if user not in result:
+            result[user] = {"total": Decimal("0"), "standard": [], "extra": []}
+
+        result[user]["total"] += amount
+        result[user][entry_type].append(
+            {"label": label, "amount": amount, "date": date}
+        )
+
+    return result
+
+
+def build_expenses_by_category(expense_rows: list) -> dict:
+    """
+    Build expenses dict grouped by category with individual transactions.
+
+    Returns:
+        {category: {"total": Decimal, "transactions": [entries]}}
+    where each entry is {"description": str, "amount": Decimal, "date": str}
+    """
+    result: dict = {}
+    for row in expense_rows:
+        if len(row) <= USCITE_COL_CATEGORY:
+            continue
+        category = (
+            row[USCITE_COL_CATEGORY].strip()
+            if row[USCITE_COL_CATEGORY]
+            else "Sconosciuto"
+        )
+        amount = parse_italian_amount(row[USCITE_COL_AMOUNT])
+        date = row[USCITE_COL_DATE] if len(row) > USCITE_COL_DATE else ""
+        description = (
+            row[USCITE_COL_DESCRIPTION] if len(row) > USCITE_COL_DESCRIPTION else ""
+        )
+
+        if category not in result:
+            result[category] = {"total": Decimal("0"), "transactions": []}
+
+        result[category]["total"] += amount
+        result[category]["transactions"].append(
+            {"description": description, "amount": amount, "date": date}
+        )
+
+    return result
+
+
 def get_monthly_report_data(year: int, month: int) -> dict | None:
     """
     Fetch and aggregate transaction data for the given month.
     Returns None if there are no transactions for that month.
     """
+    from trantrac.models import IncomeParsingConfig, StandardIncomeKeyword
+
     raw_income = fetch_sheet_transactions("ENTRATE") or []
     raw_expenses = fetch_sheet_transactions("USCITE") or []
 
@@ -92,17 +198,22 @@ def get_monthly_report_data(year: int, month: int) -> dict | None:
     if not income_rows and not expense_rows:
         return None
 
+    config = IncomeParsingConfig.get_config()
+    parsing_enabled = config.enabled if config else False
+    trigger_string = config.trigger_string if config else "DA "
+    standard_keywords = list(
+        StandardIncomeKeyword.objects.values_list("keyword", flat=True)
+    )
+
     totals = calculate_totals(income_rows, expense_rows)
 
     return {
         "year": year,
         "month": month,
-        "income_by_user": aggregate_by_field(
-            income_rows, ENTRATE_COL_USER, ENTRATE_COL_AMOUNT
+        "income_by_user": build_income_by_user(
+            income_rows, parsing_enabled, trigger_string, standard_keywords
         ),
-        "expenses_by_category": aggregate_by_field(
-            expense_rows, USCITE_COL_CATEGORY, USCITE_COL_AMOUNT
-        ),
+        "expenses_by_category": build_expenses_by_category(expense_rows),
         "expenses_by_user": aggregate_by_field(
             expense_rows, USCITE_COL_USER, USCITE_COL_AMOUNT
         ),

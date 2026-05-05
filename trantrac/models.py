@@ -346,6 +346,66 @@ def report_upload_path(instance, filename):
     return f"reports/{instance.year}/{uuid.uuid4()}.pdf"
 
 
+class IncomeParsingConfig(models.Model):
+    """Singleton: configures trigger-string parsing for income descriptions."""
+
+    enabled = models.BooleanField(
+        default=False,
+        verbose_name="Attivo",
+        help_text="Se attivo, estrae il nome dopo la stringa trigger come etichetta",
+    )
+    trigger_string = models.CharField(
+        max_length=50,
+        default="DA ",
+        verbose_name="Stringa trigger",
+        help_text="Stringa cercata nella descrizione; il testo successivo diventa l'etichetta",
+    )
+
+    class Meta:
+        verbose_name = "Configurazione parsing entrate"
+        verbose_name_plural = "Configurazione parsing entrate"
+
+    def __str__(self):
+        status = "attivo" if self.enabled else "disattivo"
+        return f"Parsing entrate ({status}) — trigger: '{self.trigger_string}'"
+
+    def save(self, *args, **kwargs):
+        if not self.pk and IncomeParsingConfig.objects.exists():
+            raise ValidationError(
+                "Esiste già una configurazione. Modificala invece di crearne una nuova."
+            )
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_config(cls):
+        return cls.objects.first()
+
+
+class StandardIncomeKeyword(models.Model):
+    """Keyword that marks an income entry as 'standard' (e.g. salary, shared expenses)."""
+
+    keyword = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Parola chiave",
+        help_text="Testo cercato nella descrizione dell'entrata (case insensitive)",
+    )
+    description = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Nota",
+        help_text="Descrizione opzionale per ricordare a cosa serve questa keyword",
+    )
+
+    class Meta:
+        verbose_name = "Parola chiave entrata standard"
+        verbose_name_plural = "Parole chiave entrate standard"
+        ordering = ["keyword"]
+
+    def __str__(self):
+        return self.keyword
+
+
 class MonthlyReport(models.Model):
     year = models.IntegerField()
     month = models.IntegerField()

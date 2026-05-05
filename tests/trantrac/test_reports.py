@@ -1,13 +1,18 @@
 from decimal import Decimal
 from unittest.mock import patch
 
+import pytest
 
 from trantrac.reports import (
     aggregate_by_field,
+    build_expenses_by_category,
+    build_income_by_user,
     calculate_totals,
+    extract_da_label,
     fetch_sheet_transactions,
     filter_by_month,
     get_monthly_report_data,
+    is_standard_income,
     parse_italian_amount,
     parse_italian_date,
 )
@@ -258,6 +263,195 @@ class TestFetchSheetTransactions:
         assert result is None
 
 
+class TestExtractDaLabel:
+    def test_finds_trigger_at_start(self):
+        assert (
+            extract_da_label("DA APPLE RETAIL ITALIA S.R.L.", "DA ")
+            == "APPLE RETAIL ITALIA S.R.L."
+        )
+
+    def test_finds_trigger_in_middle(self):
+        assert extract_da_label("ACCREDITO DA MARIO BIANCHI", "DA ") == "MARIO BIANCHI"
+
+    def test_returns_none_when_not_found(self):
+        assert extract_da_label("VOCIRETRIB. GENNAIO", "DA ") is None
+
+    def test_case_insensitive_search(self):
+        assert extract_da_label("accredito da mario rossi", "DA ") == "mario rossi"
+
+    def test_returns_none_for_empty_description(self):
+        assert extract_da_label("", "DA ") is None
+
+    def test_returns_none_when_nothing_after_trigger(self):
+        assert extract_da_label("ACCREDITO DA", "DA ") is None
+
+    def test_uses_last_occurrence_when_multiple_triggers(self):
+        assert extract_da_label("DA 01-04-2026 A 30-04-2026 DA INPS", "DA ") == "INPS"
+
+    def test_does_not_match_trigger_inside_word(self):
+        assert extract_da_label("DA MARIO BIANCHI", "DA") == "MARIO BIANCHI"
+
+    def test_custom_trigger_string(self):
+        assert extract_da_label("TRASF. PER MARCO", "PER ") == "MARCO"
+
+
+class TestIsStandardIncome:
+    def test_matches_keyword_in_description(self):
+        assert is_standard_income("VOCIRETRIB. GENNAIO 2025", ["VOCIRETRIB."]) is True
+
+    def test_matches_keyword_case_insensitive(self):
+        assert is_standard_income("vociretrib. gennaio", ["VOCIRETRIB."]) is True
+
+    def test_no_match(self):
+        assert (
+            is_standard_income(
+                "DA APPLE RETAIL ITALIA", ["VOCIRETRIB.", "SPESE COMUNI"]
+            )
+            is False
+        )
+
+    def test_empty_keywords(self):
+        assert is_standard_income("VOCIRETRIB.", []) is False
+
+    def test_matches_partial_keyword(self):
+        assert is_standard_income("SPESE COMUNI FEBBRAIO", ["SPESE COMUNI"]) is True
+
+    def test_multiple_keywords_first_matches(self):
+        assert (
+            is_standard_income("VOCIRETRIB.", ["VOCIRETRIB.", "SPESE COMUNI"]) is True
+        )
+
+    def test_multiple_keywords_second_matches(self):
+        assert (
+            is_standard_income("SPESE COMUNI", ["VOCIRETRIB.", "SPESE COMUNI"]) is True
+        )
+
+
+class TestBuildIncomeByUser:
+    def _make_row(self, user, date, amount, description=""):
+        return [user, date, amount, description, "cat", "id"]
+
+    def test_groups_by_user(self):
+        rows = [
+            self._make_row("Enrico", "15/01/2025", "1.000,00", "VOCIRETRIB."),
+            self._make_row("Viviana", "16/01/2025", "500,00", "VOCIRETRIB."),
+            self._make_row("Enrico", "17/01/2025", "200,00", "DA MARIO ROSSI"),
+        ]
+        result = build_income_by_user(rows, False, "DA ", [])
+        assert "Enrico" in result
+        assert "Viviana" in result
+        assert result["Enrico"]["total"] == Decimal("1200.00")
+        assert result["Viviana"]["total"] == Decimal("500.00")
+
+    def test_classifies_standard_vs_extra(self):
+        rows = [
+            self._make_row("Enrico", "15/01/2025", "3.000,00", "VOCIRETRIB. GENNAIO"),
+            self._make_row("Enrico", "20/01/2025", "50,00", "DA APPLE RETAIL"),
+        ]
+        result = build_income_by_user(rows, False, "DA ", ["VOCIRETRIB."])
+        assert len(result["Enrico"]["standard"]) == 1
+        assert len(result["Enrico"]["extra"]) == 1
+        assert result["Enrico"]["standard"][0]["label"] == "VOCIRETRIB. GENNAIO"
+        assert result["Enrico"]["extra"][0]["label"] == "DA APPLE RETAIL"
+
+    def test_da_parsing_when_enabled(self):
+        rows = [
+            self._make_row(
+                "Enrico", "20/01/2025", "50,00", "ACCREDITO DA APPLE RETAIL ITALIA"
+            )
+        ]
+        result = build_income_by_user(rows, True, "DA ", [])
+        assert result["Enrico"]["extra"][0]["label"] == "APPLE RETAIL ITALIA"
+
+    def test_da_parsing_when_disabled(self):
+        rows = [
+            self._make_row(
+                "Enrico", "20/01/2025", "50,00", "ACCREDITO DA APPLE RETAIL ITALIA"
+            )
+        ]
+        result = build_income_by_user(rows, False, "DA ", [])
+        assert (
+            result["Enrico"]["extra"][0]["label"] == "ACCREDITO DA APPLE RETAIL ITALIA"
+        )
+
+    def test_da_parsing_only_when_trigger_found(self):
+        rows = [self._make_row("Enrico", "20/01/2025", "50,00", "VOCIRETRIB. GENNAIO")]
+        result = build_income_by_user(rows, True, "DA ", [])
+        assert result["Enrico"]["extra"][0]["label"] == "VOCIRETRIB. GENNAIO"
+
+    def test_empty_rows_returns_empty_dict(self):
+        assert build_income_by_user([], False, "DA ", []) == {}
+
+    def test_skips_rows_too_short(self):
+        rows = [["Enrico"]]
+        assert build_income_by_user(rows, False, "DA ", []) == {}
+
+    def test_entry_contains_date(self):
+        rows = [self._make_row("Enrico", "15/01/2025", "100,00", "VOCIRETRIB.")]
+        result = build_income_by_user(rows, False, "DA ", [])
+        assert result["Enrico"]["extra"][0]["date"] == "15/01/2025"
+
+    def test_all_extra_when_no_keywords(self):
+        rows = [
+            self._make_row("Enrico", "15/01/2025", "3.000,00", "VOCIRETRIB. GENNAIO"),
+            self._make_row("Enrico", "20/01/2025", "50,00", "DA APPLE RETAIL"),
+        ]
+        result = build_income_by_user(rows, False, "DA ", [])
+        assert len(result["Enrico"]["standard"]) == 0
+        assert len(result["Enrico"]["extra"]) == 2
+
+
+class TestBuildExpensesByCategory:
+    def _make_row(self, user, date, amount, description, category):
+        return [user, date, amount, description, category, "sub", "Comune", "id"]
+
+    def test_groups_by_category(self):
+        rows = [
+            self._make_row(
+                "Enrico", "15/01/2025", "50,00", "Caffè", "Bar e Ristoranti"
+            ),
+            self._make_row(
+                "Viviana", "16/01/2025", "100,00", "Ristorante", "Bar e Ristoranti"
+            ),
+            self._make_row("Enrico", "17/01/2025", "80,00", "Esselunga", "Alimentari"),
+        ]
+        result = build_expenses_by_category(rows)
+        assert "Bar e Ristoranti" in result
+        assert "Alimentari" in result
+        assert result["Bar e Ristoranti"]["total"] == Decimal("150.00")
+        assert result["Alimentari"]["total"] == Decimal("80.00")
+
+    def test_transactions_listed_under_category(self):
+        rows = [
+            self._make_row(
+                "Enrico", "15/01/2025", "50,00", "Caffè", "Bar e Ristoranti"
+            ),
+            self._make_row(
+                "Viviana", "16/01/2025", "100,00", "Ristorante", "Bar e Ristoranti"
+            ),
+        ]
+        result = build_expenses_by_category(rows)
+        txs = result["Bar e Ristoranti"]["transactions"]
+        assert len(txs) == 2
+        assert txs[0]["description"] == "Caffè"
+        assert txs[0]["amount"] == Decimal("50.00")
+        assert txs[0]["date"] == "15/01/2025"
+        assert txs[1]["description"] == "Ristorante"
+
+    def test_empty_rows_returns_empty_dict(self):
+        assert build_expenses_by_category([]) == {}
+
+    def test_skips_rows_too_short(self):
+        rows = [["Enrico", "15/01/2025", "50,00"]]
+        assert build_expenses_by_category(rows) == {}
+
+    def test_fallback_category_name(self):
+        rows = [["Enrico", "15/01/2025", "50,00", "desc", "", "sub", "Comune", "id"]]
+        result = build_expenses_by_category(rows)
+        assert "Sconosciuto" in result
+
+
+@pytest.mark.django_db
 class TestGetMonthlyReportData:
     @patch("trantrac.reports.fetch_sheet_transactions")
     def test_returns_none_when_no_transactions(self, mock_fetch):
@@ -270,14 +464,21 @@ class TestGetMonthlyReportData:
         def side_effect(sheet_name):
             if sheet_name == "ENTRATE":
                 return [
-                    ["Enrico", "15/01/2025", "1.000,00", "desc", "Stipendio", "ID1"]
+                    [
+                        "Enrico",
+                        "15/01/2025",
+                        "1.000,00",
+                        "VOCIRETRIB.",
+                        "Stipendio",
+                        "ID1",
+                    ]
                 ]
             return [
                 [
                     "Enrico",
                     "15/01/2025",
                     "200,00",
-                    "desc",
+                    "Esselunga",
                     "Alimentari",
                     "sub",
                     "Comune",
@@ -297,9 +498,50 @@ class TestGetMonthlyReportData:
         assert result["count_expenses"] == 1
         assert "Enrico" in result["income_by_user"]
         assert "Alimentari" in result["expenses_by_category"]
-        assert (
-            "Comune" in result["expenses_by_user"]
-        )  # col 6 = "Comune" for CSV imports
+        assert "Comune" in result["expenses_by_user"]
+
+    @patch("trantrac.reports.fetch_sheet_transactions")
+    def test_income_by_user_has_structured_data(self, mock_fetch):
+        def side_effect(sheet_name):
+            if sheet_name == "ENTRATE":
+                return [
+                    ["Enrico", "15/01/2025", "1.000,00", "VOCIRETRIB.", "cat", "ID1"]
+                ]
+            return []
+
+        mock_fetch.side_effect = side_effect
+        result = get_monthly_report_data(2025, 1)
+        enrico = result["income_by_user"]["Enrico"]
+        assert "total" in enrico
+        assert "standard" in enrico
+        assert "extra" in enrico
+        assert enrico["total"] == Decimal("1000.00")
+
+    @patch("trantrac.reports.fetch_sheet_transactions")
+    def test_expenses_by_category_has_structured_data(self, mock_fetch):
+        def side_effect(sheet_name):
+            if sheet_name == "ENTRATE":
+                return []
+            return [
+                [
+                    "Enrico",
+                    "15/01/2025",
+                    "50,00",
+                    "Caffè",
+                    "Bar e Ristoranti",
+                    "sub",
+                    "Comune",
+                    "ID1",
+                ]
+            ]
+
+        mock_fetch.side_effect = side_effect
+        result = get_monthly_report_data(2025, 1)
+        bar = result["expenses_by_category"]["Bar e Ristoranti"]
+        assert "total" in bar
+        assert "transactions" in bar
+        assert bar["total"] == Decimal("50.00")
+        assert len(bar["transactions"]) == 1
 
     @patch("trantrac.reports.fetch_sheet_transactions")
     def test_filters_other_months(self, mock_fetch):
@@ -307,7 +549,7 @@ class TestGetMonthlyReportData:
             if sheet_name == "ENTRATE":
                 return [
                     ["Enrico", "15/01/2025", "500,00", "desc"],
-                    ["Enrico", "15/02/2025", "300,00", "desc"],  # wrong month
+                    ["Enrico", "15/02/2025", "300,00", "desc"],
                 ]
             return []
 
@@ -340,7 +582,18 @@ class TestGetMonthlyReportData:
         def side_effect(sheet_name):
             if sheet_name == "ENTRATE":
                 return []
-            return [["Enrico", "15/01/2025", "200,00", "desc", "Alimentari"]]
+            return [
+                [
+                    "Enrico",
+                    "15/01/2025",
+                    "200,00",
+                    "desc",
+                    "Alimentari",
+                    "sub",
+                    "Comune",
+                    "ID1",
+                ]
+            ]
 
         mock_fetch.side_effect = side_effect
         result = get_monthly_report_data(2025, 1)
@@ -349,8 +602,6 @@ class TestGetMonthlyReportData:
 
     @patch("trantrac.reports.fetch_sheet_transactions")
     def test_iso_dates_from_web_form(self, mock_fetch):
-        """Expenses added via web form use YYYY-MM-DD dates; col 6 is the account owner"""
-
         def side_effect(sheet_name):
             if sheet_name == "ENTRATE":
                 return []
@@ -385,3 +636,39 @@ class TestGetMonthlyReportData:
         assert "Viviana" in result["expenses_by_user"]
         assert result["expenses_by_user"]["Enrico"] == Decimal("150.00")
         assert result["expenses_by_user"]["Viviana"] == Decimal("80.00")
+
+    @patch("trantrac.reports.fetch_sheet_transactions")
+    def test_uses_income_parsing_config_from_db(self, mock_fetch):
+        from trantrac.models import IncomeParsingConfig
+
+        IncomeParsingConfig.objects.create(enabled=True, trigger_string="DA ")
+
+        def side_effect(sheet_name):
+            if sheet_name == "ENTRATE":
+                return [["Enrico", "15/01/2025", "50,00", "ACCREDITO DA APPLE RETAIL"]]
+            return []
+
+        mock_fetch.side_effect = side_effect
+        result = get_monthly_report_data(2025, 1)
+        entry = result["income_by_user"]["Enrico"]["extra"][0]
+        assert entry["label"] == "APPLE RETAIL"
+
+    @patch("trantrac.reports.fetch_sheet_transactions")
+    def test_uses_standard_keywords_from_db(self, mock_fetch):
+        from trantrac.models import StandardIncomeKeyword
+
+        StandardIncomeKeyword.objects.create(keyword="VOCIRETRIB.")
+
+        def side_effect(sheet_name):
+            if sheet_name == "ENTRATE":
+                return [
+                    ["Enrico", "15/01/2025", "3.000,00", "VOCIRETRIB. GENNAIO"],
+                    ["Enrico", "20/01/2025", "50,00", "DA APPLE RETAIL"],
+                ]
+            return []
+
+        mock_fetch.side_effect = side_effect
+        result = get_monthly_report_data(2025, 1)
+        enrico = result["income_by_user"]["Enrico"]
+        assert len(enrico["standard"]) == 1
+        assert len(enrico["extra"]) == 1

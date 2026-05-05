@@ -56,9 +56,9 @@
       font-size: 14pt;
       font-weight: bold;
     }
-    .card-income .card-value { color: #16a34a; }
+    .card-income .card-value  { color: #16a34a; }
     .card-expenses .card-value { color: #dc2626; }
-    .card-balance .card-value { color: #2563eb; }
+    .card-balance .card-value  { color: #2563eb; }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -89,6 +89,32 @@
       font-weight: bold;
       background: #f0f7ff;
       border-top: 1.5px solid #bfdbfe;
+    }
+    .user-header td {
+      background: #dbeafe;
+      font-weight: bold;
+      font-size: 10.5pt;
+      padding: 8px 10px;
+      border-top: 1.5px solid #93c5fd;
+    }
+    .section-label td {
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 4px 10px 4px 20px;
+    }
+    .detail-row td:first-child {
+      padding-left: 28px;
+      color: #374151;
+    }
+    .category-header td {
+      background: #dbeafe;
+      font-weight: bold;
+      font-size: 10.5pt;
+      padding: 8px 10px;
+      border-top: 1.5px solid #93c5fd;
     }
     .footer {
       margin-top: 32px;
@@ -121,25 +147,51 @@
     </div>
   </div>
 
-  <!-- Entrate per utente -->
+  <!-- Entrate per utente con dettaglio standard/extra -->
   <h2>Entrate per utente</h2>
   {% if income_by_user %}
   <table>
     <thead>
       <tr>
-        <th>Utente</th>
+        <th>Descrizione</th>
+        <th>Data</th>
         <th class="right">Importo</th>
       </tr>
     </thead>
     <tbody>
-      {% for user, amount in income_by_user.items %}
-      <tr>
+      {% for user, data in income_by_user.items %}
+      <tr class="user-header">
         <td>{{ user }}</td>
-        <td class="right">€{{ amount|floatformat:2 }}</td>
+        <td></td>
+        <td class="right">€{{ data.total|floatformat:2 }}</td>
+      </tr>
+      {% if data.standard %}
+      <tr class="section-label">
+        <td colspan="3">Entrate standard</td>
+      </tr>
+      {% for entry in data.standard %}
+      <tr class="detail-row">
+        <td>{{ entry.label }}</td>
+        <td>{{ entry.date }}</td>
+        <td class="right">€{{ entry.amount|floatformat:2 }}</td>
       </tr>
       {% endfor %}
+      {% endif %}
+      {% if data.extra %}
+      <tr class="section-label">
+        <td colspan="3">Entrate extra</td>
+      </tr>
+      {% for entry in data.extra %}
+      <tr class="detail-row">
+        <td>{{ entry.label }}</td>
+        <td>{{ entry.date }}</td>
+        <td class="right">€{{ entry.amount|floatformat:2 }}</td>
+      </tr>
+      {% endfor %}
+      {% endif %}
+      {% endfor %}
       <tr class="total-row">
-        <td>Totale</td>
+        <td colspan="2">Totale entrate</td>
         <td class="right">€{{ total_income|floatformat:2 }}</td>
       </tr>
     </tbody>
@@ -148,25 +200,34 @@
   <p>Nessuna entrata per questo mese.</p>
   {% endif %}
 
-  <!-- Uscite per categoria -->
+  <!-- Uscite per categoria con dettaglio transazioni -->
   <h2>Uscite per categoria</h2>
   {% if expenses_by_category %}
   <table>
     <thead>
       <tr>
-        <th>Categoria</th>
+        <th>Descrizione</th>
+        <th>Data</th>
         <th class="right">Importo</th>
       </tr>
     </thead>
     <tbody>
-      {% for category, amount in expenses_by_category.items %}
-      <tr>
+      {% for category, data in expenses_by_category.items %}
+      <tr class="category-header">
         <td>{{ category }}</td>
-        <td class="right">€{{ amount|floatformat:2 }}</td>
+        <td></td>
+        <td class="right">€{{ data.total|floatformat:2 }}</td>
+      </tr>
+      {% for tx in data.transactions %}
+      <tr class="detail-row">
+        <td>{{ tx.description }}</td>
+        <td>{{ tx.date }}</td>
+        <td class="right">€{{ tx.amount|floatformat:2 }}</td>
       </tr>
       {% endfor %}
+      {% endfor %}
       <tr class="total-row">
-        <td>Totale</td>
+        <td colspan="2">Totale uscite</td>
         <td class="right">€{{ total_expenses|floatformat:2 }}</td>
       </tr>
     </tbody>

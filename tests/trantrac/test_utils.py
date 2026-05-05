@@ -15,6 +15,7 @@ from trantrac.utils import (
     import_csv_to_sheet,
     sanitize_csv_value,
     save_to_sheet,
+    smart_truncate,
 )
 
 
@@ -418,10 +419,10 @@ class TestImportCsvToSheet(TestCase):
 
     @patch("trantrac.utils.save_to_sheet")
     @patch("trantrac.models.save_category_and_sub_to_sheet")
-    def test_import_csv_truncates_long_descriptions(
+    def test_import_csv_truncates_long_descriptions_uscite(
         self, mock_save_cat, mock_save_sheet
     ):
-        """Test CSV import truncates descriptions longer than 50 characters"""
+        """USCITE always use standard truncation to 50 chars"""
         mock_save_cat.return_value = True
         mock_save_sheet.return_value = (True, "")
 
@@ -432,11 +433,61 @@ class TestImportCsvToSheet(TestCase):
         csv_file = self.create_csv_file(csv_content)
         import_csv_to_sheet(csv_file, self.user)
 
-        # Get the USCITE call
         uscite_call = [
             call for call in mock_save_sheet.call_args_list if call[0][1] == "USCITE"
         ][0]
         description = uscite_call[0][0][0][3]
+
+        assert len(description) == 50
+        assert description.endswith("...")
+
+    @patch("trantrac.utils.save_to_sheet")
+    @patch("trantrac.models.save_category_and_sub_to_sheet")
+    def test_import_csv_smart_truncate_entrate_with_config(
+        self, mock_save_cat, mock_save_sheet
+    ):
+        """ENTRATE use smart truncation when IncomeParsingConfig is active."""
+        from trantrac.models import IncomeParsingConfig
+
+        IncomeParsingConfig.objects.create(enabled=True, trigger_string="DA ")
+        mock_save_cat.return_value = True
+        mock_save_sheet.return_value = (True, "")
+
+        long_desc = "ASSEGNO UNICO PER 1 FIGLI/O PER IL PERIODO DA 01-04-2026 A 30-04-2026 - NUMERO PRATICA 16961 DA INPS"
+        csv_content = f"""Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
+01/01/2025,+500.00,{long_desc},Entrate,Stipendio,XYZ456"""
+
+        csv_file = self.create_csv_file(csv_content)
+        import_csv_to_sheet(csv_file, self.user)
+
+        entrate_call = [
+            call for call in mock_save_sheet.call_args_list if call[0][1] == "ENTRATE"
+        ][0]
+        description = entrate_call[0][0][0][3]
+
+        assert description.endswith("DA INPS")
+        assert "..." in description
+
+    @patch("trantrac.utils.save_to_sheet")
+    @patch("trantrac.models.save_category_and_sub_to_sheet")
+    def test_import_csv_entrate_standard_truncation_without_config(
+        self, mock_save_cat, mock_save_sheet
+    ):
+        """ENTRATE use standard truncation when IncomeParsingConfig is disabled or absent."""
+        mock_save_cat.return_value = True
+        mock_save_sheet.return_value = (True, "")
+
+        long_desc = "A" * 60
+        csv_content = f"""Data operazione,Importo,Descrizione,Categoria,Sottocategoria,Codice identificativo
+01/01/2025,+500.00,{long_desc},Entrate,Stipendio,XYZ456"""
+
+        csv_file = self.create_csv_file(csv_content)
+        import_csv_to_sheet(csv_file, self.user)
+
+        entrate_call = [
+            call for call in mock_save_sheet.call_args_list if call[0][1] == "ENTRATE"
+        ][0]
+        description = entrate_call[0][0][0][3]
 
         assert len(description) == 50
         assert description.endswith("...")
@@ -641,6 +692,58 @@ class TestEnsureCategoriesInDb:
         _ensure_categories_in_db({("Food", "Groceries")})
         assert Subcategory.objects.filter(name="Groceries").count() == 1
         mock_save.assert_not_called()
+
+
+class TestSmartTruncate:
+    def test_short_string_unchanged(self):
+        assert smart_truncate("VOCIRETRIB.", 50) == "VOCIRETRIB."
+
+    def test_standard_truncation_without_trigger(self):
+        result = smart_truncate("A" * 60, 50)
+        assert len(result) == 50
+        assert result.endswith("...")
+
+    def test_standard_truncation_trigger_not_found(self):
+        long = "PAGAMENTO UTENZA GAS APRILE 2025 NUMERO CONTRATTO 1234567890"
+        result = smart_truncate(long, 50, trigger="DA ")
+        assert result.endswith("...")
+        assert len(result) == 50
+
+    def test_smart_truncation_preserves_trigger_suffix(self):
+        desc = "ASSEGNO UNICO PER 1 FIGLI/O PER IL PERIODO DA 01-04-2026 A 30-04-2026 - NUMERO PRATICA 16961 DA INPS"
+        result = smart_truncate(desc, 50, trigger="DA ")
+        assert result.endswith("DA INPS")
+        assert "..." in result
+        assert len(result) <= 50
+
+    def test_smart_truncation_uses_last_trigger(self):
+        desc = "DA 01-04-2026 A 30-04-2026 - NUMERO PRATICA 16961 DA INPS"
+        result = smart_truncate(desc, 50, trigger="DA ")
+        assert result.endswith("DA INPS")
+
+    def test_does_not_match_trigger_inside_word(self):
+        desc = "DA MARIO BIANCHI SPESE VARIE MESE CORRENTE ANNO"
+        result = smart_truncate(desc, 50, trigger="DA")
+        assert (
+            result.endswith("DA MARIO BIANCHI SPESE VARIE MESE CORRENTE ANNO")
+            or "ARIO" not in result
+        )
+
+    def test_smart_truncation_with_empty_trigger(self):
+        long = "A" * 60
+        result = smart_truncate(long, 50, trigger="")
+        assert result.endswith("...")
+
+    def test_smart_truncation_suffix_longer_than_max(self):
+        # "DA " preceded by space so \bDA\b matches; suffix alone > max_len
+        desc = "ACCREDITO DA " + "Y" * 60
+        result = smart_truncate(desc, 50, trigger="DA ")
+        assert result.startswith("...")
+        assert "DA " in result
+
+    def test_exact_max_length_unchanged(self):
+        desc = "A" * 50
+        assert smart_truncate(desc, 50) == desc
 
 
 class TestSanitizeCsvValue:
