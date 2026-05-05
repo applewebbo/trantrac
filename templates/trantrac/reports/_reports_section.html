@@ -1,0 +1,55 @@
+<div id="reports-section">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-4 alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-warning{% endif %}">
+        <span>{{ message }}</span>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if reports %}
+    <h2 class="mb-3 text-lg font-medium">Report disponibili</h2>
+    <div class="overflow-x-auto">
+      <table class="table w-full table-zebra">
+        <thead>
+          <tr>
+            <th>Periodo</th>
+            <th class="text-right">Entrate</th>
+            <th class="text-right">Uscite</th>
+            <th class="text-right">Saldo</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in reports %}
+          <tr>
+            <td>
+              <span class="font-medium">{{ report.month_name }} {{ report.year }}</span>
+              <br>
+              <span class="text-xs text-base-content/50">{{ report.generated_at|date:"d/m/Y H:i" }}</span>
+            </td>
+            <td class="text-right text-success">€{{ report.total_income|floatformat:2 }}</td>
+            <td class="text-right text-error">€{{ report.total_expenses|floatformat:2 }}</td>
+            <td class="font-medium text-right">€{{ report.balance|floatformat:2 }}</td>
+            <td class="text-right">
+              {% if report.pdf_file %}
+              <a href="{% url 'download_report' report.download_uuid %}"
+                 class="btn btn-sm btn-primary">
+                Scarica
+              </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-5 h-5 opacity-60 stroke-current shrink-0">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <span>Nessun report disponibile. I report vengono generati automaticamente il 1° di ogni mese.</span>
+    </div>
+  {% endif %}
+</div>

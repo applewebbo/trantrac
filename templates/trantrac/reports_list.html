@@ -7,11 +7,19 @@
 <div class="container px-4 my-2 mx-auto max-w-screen-sm sm:my-8">
   <h1 class="mb-6 text-2xl font-semibold">Report Mensili</h1>
 
-  <!-- Form selettore mese/anno -->
-  <div class="mb-8 border shadow-sm card bg-base-100 border-base-200">
+  {% if user.is_staff %}
+  <div class="relative mb-8 border shadow-sm card bg-base-100 border-base-200">
+    <div id="regen-spinner"
+         class="flex absolute inset-0 z-50 justify-center items-center htmx-indicator bg-base-100/70">
+      <span class="loading loading-spinner loading-lg text-warning"></span>
+    </div>
     <div class="card-body">
-      <h2 class="text-base card-title">Scarica un report</h2>
-      <form method="post" action="{% url 'reports_list' %}">
+      <h2 class="text-base card-title">Rigenera report</h2>
+      <form hx-post="{% url 'regenerate_report' %}"
+            hx-target="#reports-section"
+            hx-swap="outerHTML"
+            hx-indicator="#regen-spinner"
+            hx-disabled-elt="find [type='submit']">
         {% csrf_token %}
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
           <div class="flex-1 form-control">
@@ -29,64 +37,18 @@
             <label class="label" for="id_year">
               <span class="label-text">Anno</span>
             </label>
-            <select name="year" id="id_year" class="w-full select select-bordered">
-              <option value="">-- Seleziona anno --</option>
-              {% for year in available_years %}
-                <option value="{{ year }}">{{ year }}</option>
-              {% endfor %}
-            </select>
+            <input type="number" name="year" id="id_year" class="w-full input input-bordered"
+                   placeholder="es. 2026" min="2020" max="2099">
           </div>
           <div class="sm:pb-0 form-control">
-            <button type="submit" class="w-full sm:w-auto btn btn-primary">Scarica PDF</button>
+            <button type="submit" class="w-full sm:w-auto btn btn-warning">Rigenera</button>
           </div>
         </div>
       </form>
     </div>
   </div>
-
-  <!-- Lista report disponibili -->
-  {% if reports %}
-    <h2 class="mb-3 text-lg font-medium">Report disponibili</h2>
-    <div class="overflow-x-auto">
-      <table class="table w-full table-zebra">
-        <thead>
-          <tr>
-            <th>Periodo</th>
-            <th class="text-right">Entrate</th>
-            <th class="text-right">Uscite</th>
-            <th class="text-right">Saldo</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for report in reports %}
-          <tr>
-            <td>
-              <span class="font-medium">{{ report.month_name }} {{ report.year }}</span>
-              <br>
-              <span class="text-xs text-base-content/50">{{ report.generated_at|date:"d/m/Y" }}</span>
-            </td>
-            <td class="text-right text-success">€{{ report.total_income|floatformat:2 }}</td>
-            <td class="text-right text-error">€{{ report.total_expenses|floatformat:2 }}</td>
-            <td class="font-medium text-right">€{{ report.balance|floatformat:2 }}</td>
-            <td class="text-right">
-              <a href="{% url 'download_report' report.download_uuid %}"
-                 class="btn btn-sm btn-primary">
-                Scarica
-              </a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  {% else %}
-    <div class="alert">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-5 h-5 opacity-60 stroke-current shrink-0">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-      </svg>
-      <span>Nessun report disponibile. I report vengono generati automaticamente il 1° di ogni mese.</span>
-    </div>
   {% endif %}
+
+  {% include "trantrac/reports/_reports_section.html" %}
 </div>
 {% endblock content %}

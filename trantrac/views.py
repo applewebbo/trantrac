@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
+from django.views.decorators.http import require_GET
 from django.template.response import TemplateResponse
 from django.urls import reverse
 
@@ -266,37 +267,56 @@ def suggest_categories(request):
 
 
 @login_required
+@require_GET
 def reports_list(request):
     reports = MonthlyReport.objects.order_by("-year", "-month")
-    available_years = sorted(
-        set(reports.values_list("year", flat=True)),
-        reverse=True,
-    )
     context = {
         "reports": reports,
         "months": MonthlyReport.MONTH_NAMES,
-        "available_years": available_years,
     }
+    return TemplateResponse(request, "trantrac/reports_list.html", context)
+
+
+@login_required
+def regenerate_report(request):
+    if not request.user.is_staff:
+        raise Http404
     if request.method == "POST":
         year = request.POST.get("year")
         month = request.POST.get("month")
         try:
-            report = MonthlyReport.objects.get(year=int(year), month=int(month))
-            if not report.pdf_file:
-                messages.add_message(
-                    request,
-                    messages.ERROR,
-                    "PDF non ancora disponibile per questo periodo.",
-                )
-                return TemplateResponse(request, "trantrac/reports_list.html", context)
-            return redirect("download_report", download_uuid=report.download_uuid)
-        except MonthlyReport.DoesNotExist, TypeError, ValueError:
-            messages.add_message(
-                request,
-                messages.ERROR,
-                "Nessun report disponibile per il periodo selezionato.",
+            year = int(year)
+            month = int(month)
+            if not (1 <= month <= 12):
+                raise ValueError
+        except TypeError, ValueError:
+            messages.error(request, "Mese o anno non validi.")
+            return redirect("reports_list")
+        try:
+            from trantrac.pdf_generator import generate_monthly_report
+
+            report = generate_monthly_report(year, month)
+        except Exception:
+            messages.error(request, "Errore durante la generazione del report.")
+            return redirect("reports_list")
+        if report is None:
+            messages.warning(
+                request, "Nessuna transazione trovata per il periodo selezionato."
             )
-    return TemplateResponse(request, "trantrac/reports_list.html", context)
+        else:
+            messages.success(
+                request,
+                f"Report {MonthlyReport.MONTH_NAMES.get(month)} {year} rigenerato.",
+            )
+        if request.headers.get("HX-Request"):
+            reports = MonthlyReport.objects.order_by("-year", "-month")
+            return TemplateResponse(
+                request,
+                "trantrac/reports/_reports_section.html",
+                {"reports": reports},
+            )
+        return redirect("reports_list")
+    return redirect("reports_list")
 
 
 @login_required

@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 from django.conf import settings
+from django.utils import timezone
 from django.template.loader import render_to_string
 from weasyprint import HTML
 
@@ -70,6 +71,7 @@ def generate_monthly_report(year: int, month: int):
         month=month,
         defaults={
             "pdf_file": relative_path,
+            "generated_at": timezone.now(),
             "total_income": data["total_income"],
             "total_expenses": data["total_expenses"],
             "balance": data["balance"],

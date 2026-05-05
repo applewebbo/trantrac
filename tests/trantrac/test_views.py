@@ -609,15 +609,10 @@ class TestReportsListView(TestCase):
         assert response.status_code == 200
         assert response.context["reports"].count() == 2
 
-    def test_context_includes_months_and_years(self):
-        MonthlyReport.objects.create(year=2025, month=1)
-        MonthlyReport.objects.create(year=2024, month=6)
+    def test_context_includes_months(self):
         with self.login(username=self.user.email, password="password"):
             response = self.get("reports_list")
         assert "months" in response.context
-        assert "available_years" in response.context
-        assert 2025 in response.context["available_years"]
-        assert 2024 in response.context["available_years"]
 
     def test_reports_ordered_by_year_month_desc(self):
         MonthlyReport.objects.create(year=2025, month=1)
@@ -630,49 +625,95 @@ class TestReportsListView(TestCase):
         assert reports[1].month == 1
         assert reports[2].year == 2024
 
-    def test_post_redirects_to_download_when_report_exists(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_path = Path(tmp_dir)
-            report_dir = tmp_path / "reports" / "2025"
-            report_dir.mkdir(parents=True)
-            (report_dir / "test.pdf").write_bytes(b"%PDF-1.4")
+    def test_get_does_not_accept_post(self):
+        with self.login(username=self.user.email, password="password"):
+            response = self.post("reports_list", data={})
+        assert response.status_code == 405
 
-            with override_settings(MEDIA_ROOT=tmp_path):
-                report = MonthlyReport.objects.create(year=2025, month=7)
-                report.pdf_file = "reports/2025/test.pdf"
-                report.save()
 
-                with self.login(username=self.user.email, password="password"):
-                    response = self.post(
-                        "reports_list", data={"year": 2025, "month": 7}
-                    )
+@pytest.mark.django_db
+class TestRegenerateReportView(TestCase):
+    def setUp(self):
+        self.user = self.make_user("test@example.com")
+        self.staff_user = self.make_user("staff@example.com")
+        self.staff_user.is_staff = True
+        self.staff_user.save()
 
+    def test_requires_login(self):
+        response = self.post("regenerate_report", data={"year": 2025, "month": 1})
         assert response.status_code == 302
-        assert str(report.download_uuid) in response["Location"]
 
-    def test_post_shows_error_when_report_not_found(self):
+    def test_non_staff_gets_404(self):
         with self.login(username=self.user.email, password="password"):
-            response = self.post("reports_list", data={"year": 2099, "month": 1})
-        assert response.status_code == 200
-        messages_list = list(response.context["messages"])
-        assert any("Nessun report" in str(m) for m in messages_list)
+            response = self.post("regenerate_report", data={"year": 2025, "month": 1})
+        assert response.status_code == 404
 
-    def test_post_shows_error_when_no_pdf_file(self):
-        MonthlyReport.objects.create(year=2025, month=8)
-        with self.login(username=self.user.email, password="password"):
-            response = self.post("reports_list", data={"year": 2025, "month": 8})
-        assert response.status_code == 200
-        messages_list = list(response.context["messages"])
-        assert any("non ancora disponibile" in str(m) for m in messages_list)
+    def test_get_redirects_to_reports_list(self):
+        with self.login(username=self.staff_user.email, password="password"):
+            response = self.get("regenerate_report")
+        assert response.status_code == 302
 
-    def test_post_shows_error_for_invalid_input(self):
-        with self.login(username=self.user.email, password="password"):
+    def test_invalid_month_shows_error(self):
+        with self.login(username=self.staff_user.email, password="password"):
             response = self.post(
-                "reports_list", data={"year": "notanumber", "month": "x"}
+                "regenerate_report", data={"year": 2025, "month": "abc"}
             )
+        assert response.status_code == 302
+        messages_list = list(get_messages(response.wsgi_request))
+        assert any("non validi" in str(m) for m in messages_list)
+
+    def test_invalid_month_range_shows_error(self):
+        with self.login(username=self.staff_user.email, password="password"):
+            response = self.post("regenerate_report", data={"year": 2025, "month": 13})
+        assert response.status_code == 302
+        messages_list = list(get_messages(response.wsgi_request))
+        assert any("non validi" in str(m) for m in messages_list)
+
+    def test_successful_regeneration_shows_success_message(self):
+        with patch("trantrac.pdf_generator.generate_monthly_report") as mock_gen:
+            mock_report = MonthlyReport(year=2025, month=1)
+            mock_gen.return_value = mock_report
+            with self.login(username=self.staff_user.email, password="password"):
+                response = self.post(
+                    "regenerate_report", data={"year": 2025, "month": 1}
+                )
+        assert response.status_code == 302
+        messages_list = list(get_messages(response.wsgi_request))
+        assert any("rigenerato" in str(m) for m in messages_list)
+
+    def test_no_transactions_shows_warning(self):
+        with patch("trantrac.pdf_generator.generate_monthly_report") as mock_gen:
+            mock_gen.return_value = None
+            with self.login(username=self.staff_user.email, password="password"):
+                response = self.post(
+                    "regenerate_report", data={"year": 2025, "month": 1}
+                )
+        assert response.status_code == 302
+        messages_list = list(get_messages(response.wsgi_request))
+        assert any("Nessuna transazione" in str(m) for m in messages_list)
+
+    def test_generation_exception_shows_error(self):
+        with patch("trantrac.pdf_generator.generate_monthly_report") as mock_gen:
+            mock_gen.side_effect = Exception("fail")
+            with self.login(username=self.staff_user.email, password="password"):
+                response = self.post(
+                    "regenerate_report", data={"year": 2025, "month": 1}
+                )
+        assert response.status_code == 302
+        messages_list = list(get_messages(response.wsgi_request))
+        assert any("Errore" in str(m) for m in messages_list)
+
+    def test_htmx_returns_partial_template(self):
+        with patch("trantrac.pdf_generator.generate_monthly_report") as mock_gen:
+            mock_gen.return_value = MonthlyReport(year=2025, month=1)
+            with self.login(username=self.staff_user.email, password="password"):
+                response = self.client.post(
+                    reverse("regenerate_report"),
+                    data={"year": 2025, "month": 1},
+                    headers={"hx-request": "true"},
+                )
         assert response.status_code == 200
-        messages_list = list(response.context["messages"])
-        assert any("Nessun report" in str(m) for m in messages_list)
+        self.assertTemplateUsed(response, "trantrac/reports/_reports_section.html")
 
 
 @pytest.mark.django_db
