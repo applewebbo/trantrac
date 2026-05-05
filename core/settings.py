@@ -16,7 +16,6 @@ env = environ.Env(
     CSRF_TRUSTED_ORIGINS=(str, []),
     DEBUG=(bool, False),
     PRODUCTION=(bool, False),
-    PREPEND_WWW=(bool, False),
 )
 
 # Quick-start development settings - unsuitable for production
@@ -257,7 +256,6 @@ if env("PRODUCTION"):  # pragma: no cover
     CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS").split(",")
     MIDDLEWARE.insert(2, "whitenoise.middleware.WhiteNoiseMiddleware")
 
-    PREPEND_WWW = env("PREPEND_WWW")
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
@@ -267,7 +265,7 @@ if env("PRODUCTION"):  # pragma: no cover
     SECURE_HSTS_PRELOAD = True
 
 # Application version (must match the current git release tag)
-APP_VERSION = "2026.6.5"
+APP_VERSION = "2026.7"
 
 # DaisyUI configuration (requires tailwind-cli-extra)
 TAILWIND_CLI_SRC_REPO = "dobicinaitis/tailwind-cli-extra"
