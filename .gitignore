@@ -213,3 +213,14 @@ media/
 .claude/plans/
 .claude/settings.local.json
 .playwright-mcp/
+# Added by code-review-graph
+.code-review-graph/
+
+# AI tools configuration
+.kiro/
+.cursorrules
+.windsurfrules
+.opencode.json
+.mcp.json
+AGENTS.md
+GEMINI.md

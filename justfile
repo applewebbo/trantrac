@@ -171,56 +171,109 @@ docker_down:
 # List issues (state: open|closed|all)
 [group: 'codeberg']
 issues state="open":
-    fgj issue list -s {{state}}
+    fj issue search "" --state {{state}}
 
 # Show issue details
 [group: 'codeberg']
 issue number:
-    fgj issue view {{number}}
+    fj issue view {{number}}
 
 # Add comment to issue
 [group: 'codeberg']
 issue-comment number text:
-    fgj issue comment {{number}} -b "{{text}}"
+    fj issue comment {{number}} "{{text}}"
+
+# Mark a checkbox step as done in issue body
+[group: 'codeberg']
+issue-check number step:
+    ./bin/codeberg check {{number}} "{{step}}"
 
 # Close issue
 [group: 'codeberg']
 issue-close number:
-    fgj issue close {{number}}
+    fj issue close {{number}}
 
 # Reopen issue
 [group: 'codeberg']
 issue-reopen number:
-    fgj issue edit {{number}} -s open
+    ./bin/codeberg reopen {{number}}
 
-# Add labels to issue (space-separated)
+# Create a label if it doesn't exist (color optional, default blue)
+[group: 'codeberg']
+label-create name color="#0075ca":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    TOKEN=$(grep "^CODEBERG_API_TOKEN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    REPO=$(git remote get-url origin | sed 's|.*codeberg.org[:/]\(.*\)\.git|\1|;s|.*codeberg.org[:/]\(.*\)|\1|')
+    EXISTING=$(curl -s "https://codeberg.org/api/v1/repos/${REPO}/labels" \
+      -H "Authorization: token ${TOKEN}" | jq -r '.[] | select(.name == "{{name}}") | .id')
+    if [ -n "$EXISTING" ]; then
+        echo "✓ Label '{{name}}' already exists (id: ${EXISTING})"
+    else
+        curl -s -X POST "https://codeberg.org/api/v1/repos/${REPO}/labels" \
+          -H "Authorization: token ${TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d '{"name":"{{name}}","color":"{{color}}"}' | jq -r '"✓ Label \(.name) created (id: \(.id))"'
+    fi
+
+# Add labels to issue (space-separated label names)
 [group: 'codeberg']
 issue-label number *labels:
     #!/usr/bin/env bash
     set -euo pipefail
     for label in {{labels}}; do
-        fgj issue edit {{number}} --add-label "$label"
+        fj issue edit {{number}} labels -a "$label"
+        echo "✓ Label '$label' added to issue #{{number}}"
     done
 
-# Create new issue
+# Create a label (if missing, with random color) and assign it to an issue
 [group: 'codeberg']
-issue-create title body="":
-    fgj issue create -t "{{title}}" -b "{{body}}"
-
-# Edit issue title and/or body
-[group: 'codeberg']
-issue-edit number title="" body="":
+issue-label-create number name:
     #!/usr/bin/env bash
     set -euo pipefail
-    ARGS=""
-    [ -n "{{title}}" ] && ARGS="$ARGS -t '{{title}}'"
-    [ -n "{{body}}" ] && ARGS="$ARGS -b '{{body}}'"
-    eval fgj issue edit {{number}} $ARGS
+    COLORS=("#e11d48" "#ea580c" "#d97706" "#65a30d" "#16a34a" "#059669" "#0891b2" "#2563eb" "#7c3aed" "#c026d3" \
+            "#be185d" "#b45309" "#4d7c0f" "#0e7490" "#1d4ed8" "#6d28d9" "#a21caf" "#be123c" "#15803d" "#0369a1")
+    RANDOM_COLOR=${COLORS[$((RANDOM % ${#COLORS[@]}))]}
+    TOKEN=$(grep "^CODEBERG_API_TOKEN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    REPO=$(git remote get-url origin | sed 's|.*codeberg.org[:/]\(.*\)\.git|\1|;s|.*codeberg.org[:/]\(.*\)|\1|')
+    LABEL_ID=$(curl -s "https://codeberg.org/api/v1/repos/${REPO}/labels" \
+      -H "Authorization: token ${TOKEN}" | jq -r '.[] | select(.name == "{{name}}") | .id')
+    if [ -z "$LABEL_ID" ]; then
+        echo "Creating label '{{name}}' with color ${RANDOM_COLOR}..."
+        LABEL_ID=$(curl -s -X POST "https://codeberg.org/api/v1/repos/${REPO}/labels" \
+          -H "Authorization: token ${TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"name\":\"{{name}}\",\"color\":\"${RANDOM_COLOR}\"}" | jq -r '.id')
+        echo "✓ Label '{{name}}' created (id: ${LABEL_ID})"
+    else
+        echo "✓ Label '{{name}}' already exists (id: ${LABEL_ID})"
+    fi
+    fj issue edit {{number}} labels -a "{{name}}"
+    echo "✓ Label assigned to issue #{{number}}"
+
+# Create new issue (body optional)
+[group: 'codeberg']
+issue-create title body="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{body}}" ]; then
+        EDITOR=true fj issue create "{{title}}" --no-template
+    else
+        TMPFILE=$(mktemp /tmp/issue-body-XXXXXX.md)
+        echo "{{body}}" > "$TMPFILE"
+        EDITOR=true fj issue create "{{title}}" --body-file "$TMPFILE" --no-template
+        rm "$TMPFILE"
+    fi
+
+# Edit issue body from file (usage: just issue-edit-body 42 /path/to/body.md)
+[group: 'codeberg']
+issue-edit-body number file:
+    fj issue edit {{number}} body "$(cat {{file}})"
 
 # Create a pull request from current branch to main
 [group: 'codeberg']
 pr-create title body="" base="main":
-    fgj pr create -t "{{title}}" -b "{{body}}" -B "{{base}}" -H "$(git branch --show-current)"
+    fj pr create -t "{{title}}" -b "{{body}}" -B "{{base}}" -H "$(git branch --show-current)"
 
 # ============================================================================
 # Codeberg Releases
@@ -229,18 +282,26 @@ pr-create title body="" base="main":
 # List all releases
 [group: 'codeberg']
 release-list:
-    fgj release list
+    fj release list --include-draft --include-prerelease
 
 # Show release details
 [group: 'codeberg']
 release-show tag:
-    fgj release view {{tag}}
+    fj release view "{{tag}}" --by-tag
 
-# Create a new release (auto-creates tag, pushes it, and generates notes from commits)
+# Create a new release (creates tag, pushes main+tag, creates Codeberg release via fj)
+# Pass notes_file to use custom rich notes; omit for auto-generated notes from commits
 [group: 'codeberg']
-release-create tag previous_tag="" draft="false" prerelease="false":
+release-create tag previous_tag="" notes_file="" draft="false" prerelease="false":
     #!/usr/bin/env bash
     set -euo pipefail
+
+    REPO=$(git remote get-url origin | sed 's|.*codeberg.org[:/]\(.*\)\.git|\1|;s|.*codeberg.org[:/]\(.*\)|\1|')
+
+    # Push main to origin
+    echo "📤 Pushing main to origin..."
+    git push origin main
+    echo "✓ main pushed to origin"
 
     # Check if tag already exists locally
     if git rev-parse "{{tag}}" >/dev/null 2>&1; then
@@ -251,83 +312,76 @@ release-create tag previous_tag="" draft="false" prerelease="false":
         echo "✓ Tag {{tag}} created"
     fi
 
-    # Push tag to origin
+    # Push tag to origin (use refs/tags/ to avoid branch/tag ambiguity)
     echo "📤 Pushing tag {{tag}} to origin..."
-    if git push origin "{{tag}}" 2>&1 | grep -q "already exists"; then
-        echo "✓ Tag {{tag}} already exists on remote"
+    git push origin "refs/tags/{{tag}}"
+    echo "✓ Tag {{tag}} pushed to origin"
+
+    # Determine notes file
+    if [ "{{notes_file}}" != "" ]; then
+        NOTES_FILE="{{notes_file}}"
+        echo "📄 Using provided notes file: ${NOTES_FILE}"
     else
-        echo "✓ Tag {{tag}} pushed to origin"
+        NOTES_FILE=$(mktemp /tmp/release-notes-XXXXXX.md)
+
+        if [ "{{previous_tag}}" = "" ]; then
+            PREV_TAG=$(git tag --sort=-version:refname | grep -v "{{tag}}" | head -1)
+        else
+            PREV_TAG="{{previous_tag}}"
+        fi
+
+        echo "🔍 Generating release notes (comparing with ${PREV_TAG})..."
+        COMMITS=$(git log ${PREV_TAG}..{{tag}} --pretty=format:"- %s" --reverse 2>/dev/null || echo "- Initial release")
+
+        FEATURES=$(echo "$COMMITS" | grep -E "^- (✨|feat)" || true)
+        FIXES=$(echo "$COMMITS" | grep -E "^- (🐛|fix)" || true)
+        CHORES=$(echo "$COMMITS" | grep -E "^- (🔧|chore|📦|build|🎨)" || true)
+        TESTS=$(echo "$COMMITS" | grep -E "^- (🧪|test|✅)" || true)
+        DOCS=$(echo "$COMMITS" | grep -E "^- (📚|docs)" || true)
+
+        {
+            echo "## What's New in {{tag}}"
+            echo ""
+            if [ -n "$FEATURES" ]; then
+                echo "### 🚀 Features"
+                echo "$FEATURES"
+                echo ""
+            fi
+            if [ -n "$FIXES" ]; then
+                echo "### 🐛 Bug Fixes"
+                echo "$FIXES"
+                echo ""
+            fi
+            if [ -n "$CHORES" ]; then
+                echo "### 🛠️ Maintenance"
+                echo "$CHORES"
+                echo ""
+            fi
+            if [ -n "$TESTS" ]; then
+                echo "### 🧪 Testing"
+                echo "$TESTS"
+                echo ""
+            fi
+            if [ -n "$DOCS" ]; then
+                echo "### 📖 Documentation"
+                echo "$DOCS"
+                echo ""
+            fi
+            echo "### 📖 Full Changelog"
+            echo "https://codeberg.org/${REPO}/compare/${PREV_TAG}...{{tag}}"
+        } > "$NOTES_FILE"
     fi
 
-    # Determine previous tag if not provided
-    if [ "{{previous_tag}}" = "" ]; then
-        PREV_TAG=$(git tag --sort=-version:refname | grep -v "{{tag}}" | head -1)
-    else
-        PREV_TAG="{{previous_tag}}"
-    fi
-
-    echo "🔍 Generating release notes (comparing with ${PREV_TAG})..."
-
-    # Generate release notes from commits
-    COMMITS=$(git log ${PREV_TAG}..{{tag}} --pretty=format:"- %s" --reverse 2>/dev/null || echo "- Initial release")
-
-    # Parse commits into categories
-    FEATURES=$(echo "$COMMITS" | grep -E "^- (✨|feat)" || true)
-    FIXES=$(echo "$COMMITS" | grep -E "^- (🐛|fix)" || true)
-    CHORES=$(echo "$COMMITS" | grep -E "^- (🔧|chore|📦|build|🎨)" || true)
-    TESTS=$(echo "$COMMITS" | grep -E "^- (🧪|test|✅)" || true)
-    DOCS=$(echo "$COMMITS" | grep -E "^- (📚|docs)" || true)
-
-    # Build release body
-    NL=$'\n'
-    BODY="## What's New in {{tag}}${NL}${NL}"
-
-    if [ -n "$FEATURES" ]; then
-        BODY+="### 🚀 Features${NL}$FEATURES${NL}${NL}"
-    fi
-
-    if [ -n "$FIXES" ]; then
-        BODY+="### 🐛 Bug Fixes${NL}$FIXES${NL}${NL}"
-    fi
-
-    if [ -n "$CHORES" ]; then
-        BODY+="### 🛠️ Maintenance${NL}$CHORES${NL}${NL}"
-    fi
-
-    if [ -n "$TESTS" ]; then
-        BODY+="### 🧪 Testing${NL}$TESTS${NL}${NL}"
-    fi
-
-    if [ -n "$DOCS" ]; then
-        BODY+="### 📖 Documentation${NL}$DOCS${NL}${NL}"
-    fi
-
-    REPO_PATH=$(git remote get-url origin | sed 's|.*codeberg.org[:/]\(.*\)\.git|\1|;s|.*codeberg.org[:/]\(.*\)|\1|')
-    BODY+="### 📖 Full Changelog${NL}https://codeberg.org/${REPO_PATH}/compare/${PREV_TAG}...{{tag}}"
-
-    # Write notes to temp file to avoid shell escaping issues
-    NOTES_FILE=$(mktemp)
-    echo "$BODY" > "$NOTES_FILE"
-
-    # Create release via fgj
+    # Create release via fj
     echo "🚀 Creating release on Codeberg..."
-    DRAFT_FLAG=""
-    PRERELEASE_FLAG=""
-    [ "{{draft}}" = "true" ] && DRAFT_FLAG="--draft"
-    [ "{{prerelease}}" = "true" ] && PRERELEASE_FLAG="--prerelease"
-
-    fgj release create "{{tag}}" \
-        --title "{{tag}}" \
-        --notes-file "$NOTES_FILE" \
-        $DRAFT_FLAG $PRERELEASE_FLAG
-
-    rm -f "$NOTES_FILE"
-    echo "✓ Release {{tag}} created successfully!"
+    fj release create "{{tag}}" -r "$REPO" --tag "{{tag}}" --body "$(cat "$NOTES_FILE")"
+    echo ""
+    echo "✓ Release {{tag}} created!"
 
 # Delete a release (use with caution!)
 [group: 'codeberg']
 release-delete tag:
-    fgj release delete {{tag}}
+    fj release delete {{tag}}
 
 # ============================================================================
 # Beans
