@@ -74,7 +74,7 @@ class Command(BaseCommand):
                 )
             )
             logger.info("Report for %s/%s already exists, skipping", month, year)
-            sys.exit(2)
+            return
 
         from trantrac.pdf_generator import generate_monthly_report
 
@@ -93,7 +93,7 @@ class Command(BaseCommand):
                 self.style.WARNING(f"No transactions found for {label}. Skipping.")
             )
             logger.info("No transactions for %s/%s, skipping", month, year)
-            sys.exit(2)
+            return
 
         self.stdout.write(
             self.style.SUCCESS(f"Report for {label} generated successfully.")

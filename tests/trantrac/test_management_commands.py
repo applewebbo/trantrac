@@ -183,26 +183,21 @@ class TestGenerateMonthlyReportCommand:
         mock_gen.return_value = None
 
         out = StringIO()
-        with pytest.raises(SystemExit) as exc_info:
-            call_command(self.CMD, "--year=2025", "--month=2", stdout=out)
+        call_command(self.CMD, "--year=2025", "--month=2", stdout=out)
 
-        assert exc_info.value.code == 2
         assert "No transactions" in out.getvalue()
 
     def test_skips_when_report_already_exists(self):
         from trantrac.models import MonthlyReport
 
         report = MonthlyReport.objects.create(year=2025, month=5)
-        # Simulate a pdf_file being set
         MonthlyReport.objects.filter(pk=report.pk).update(
             pdf_file="reports/2025/fake.pdf"
         )
 
         out = StringIO()
-        with pytest.raises(SystemExit) as exc_info:
-            call_command(self.CMD, "--year=2025", "--month=5", stdout=out)
+        call_command(self.CMD, "--year=2025", "--month=5", stdout=out)
 
-        assert exc_info.value.code == 2
         assert "already exists" in out.getvalue()
 
     @patch("trantrac.pdf_generator.generate_monthly_report")
