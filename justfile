@@ -64,20 +64,20 @@ manage *args:
 # Testing
 # ============================================================================
 
-# Run tests with coverage
+# Run tests with coverage (extra pytest args are forwarded)
 [group: 'test']
-test:
-    DYLD_LIBRARY_PATH=/opt/homebrew/lib uv run pytest tests/
+test *args:
+    DYLD_LIBRARY_PATH=/opt/homebrew/lib uv run pytest tests/ {{args}}
 
-# Run fast parallel tests with coverage
+# Run fast parallel tests with coverage (extra pytest args are forwarded, e.g. just ftest --last-failed)
 [group: 'test']
-ftest:
-    DYLD_LIBRARY_PATH=/opt/homebrew/lib PYTHONWARNINGS="ignore::DeprecationWarning:pytest_asyncio.plugin" uv run pytest tests/ -n 8 --reuse-db --cov --cov-report=term-missing --cov-fail-under=100
+ftest *args:
+    DYLD_LIBRARY_PATH=/opt/homebrew/lib PYTHONWARNINGS="ignore::DeprecationWarning:pytest_asyncio.plugin" uv run pytest tests/ -n 8 --reuse-db --cov --cov-report=term-missing --cov-fail-under=100 {{args}}
 
-# Run tests with coverage report
+# Run tests with coverage report (extra pytest args are forwarded)
 [group: 'test']
-test-cov:
-    DYLD_LIBRARY_PATH=/opt/homebrew/lib uv run pytest tests/ --cov --cov-report=html --cov-report=term-missing
+test-cov *args:
+    DYLD_LIBRARY_PATH=/opt/homebrew/lib uv run pytest tests/ --cov --cov-report=html --cov-report=term-missing {{args}}
 
 # ============================================================================
 # Code Quality
@@ -165,138 +165,135 @@ docker_down:
     docker compose down -v
 
 # ============================================================================
-# Codeberg Issues
+# GitHub Issues
 # ============================================================================
 
+github_repo := "applewebbo/trantrac"
+
 # List issues (state: open|closed|all)
-[group: 'codeberg']
+[group: 'github']
 issues state="open":
-    fj issue search "" --state {{state}}
+    gh issue list -R {{github_repo}} --state {{state}} --limit 100
 
 # Show issue details
-[group: 'codeberg']
+[group: 'github']
 issue number:
-    fj issue view {{number}}
+    gh issue view {{number}} -R {{github_repo}} --comments
 
 # Add comment to issue
-[group: 'codeberg']
+[group: 'github']
 issue-comment number text:
-    fj issue comment {{number}} "{{text}}"
+    gh issue comment {{number}} -R {{github_repo}} --body {{quote(text)}}
 
 # Mark a checkbox step as done in issue body
-[group: 'codeberg']
+[group: 'github']
 issue-check number step:
-    ./bin/codeberg check {{number}} "{{step}}"
-
-# Close issue
-[group: 'codeberg']
-issue-close number:
-    fj issue close {{number}}
-
-# Reopen issue
-[group: 'codeberg']
-issue-reopen number:
-    ./bin/codeberg reopen {{number}}
-
-# Create a label if it doesn't exist (color optional, default blue)
-[group: 'codeberg']
-label-create name color="#0075ca":
     #!/usr/bin/env bash
     set -euo pipefail
-    TOKEN=$(grep "^CODEBERG_API_TOKEN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'")
-    REPO=$(git remote get-url origin | sed 's|.*codeberg.org[:/]\(.*\)\.git|\1|;s|.*codeberg.org[:/]\(.*\)|\1|')
-    EXISTING=$(curl -s "https://codeberg.org/api/v1/repos/${REPO}/labels" \
-      -H "Authorization: token ${TOKEN}" | jq -r '.[] | select(.name == "{{name}}") | .id')
-    if [ -n "$EXISTING" ]; then
-        echo "✓ Label '{{name}}' already exists (id: ${EXISTING})"
+    BODY=$(gh issue view {{number}} -R {{github_repo}} --json body --jq .body)
+    NEW_BODY=$(STEP={{quote(step)}} python3 -c 'import os, re, sys; step = os.environ["STEP"]; new, n = re.subn(r"^(\s*[-*] )\[ \](\s*.*" + re.escape(step) + r".*)$", r"\1[x]\2", sys.stdin.read(), count=1, flags=re.MULTILINE); sys.stdout.write(new) if n else sys.exit("Step not found: " + step)' <<< "$BODY")
+    gh issue edit {{number}} -R {{github_repo}} --body "$NEW_BODY"
+    echo "✓ Step checked on issue #{{number}}"
+
+# Close issue
+[group: 'github']
+issue-close number:
+    gh issue close {{number}} -R {{github_repo}}
+
+# Reopen issue
+[group: 'github']
+issue-reopen number:
+    gh issue reopen {{number}} -R {{github_repo}}
+
+# Create a label if it doesn't exist (color optional, default blue)
+[group: 'github']
+label-create name color="0075ca":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    NAME={{quote(name)}}
+    COLOR=$(echo {{quote(color)}} | tr -d '#')
+    if gh label list -R {{github_repo}} --limit 200 --json name --jq '.[].name' | grep -qxF "$NAME"; then
+        echo "✓ Label '$NAME' already exists"
     else
-        curl -s -X POST "https://codeberg.org/api/v1/repos/${REPO}/labels" \
-          -H "Authorization: token ${TOKEN}" \
-          -H "Content-Type: application/json" \
-          -d '{"name":"{{name}}","color":"{{color}}"}' | jq -r '"✓ Label \(.name) created (id: \(.id))"'
+        gh label create "$NAME" -R {{github_repo}} --color "$COLOR"
+        echo "✓ Label '$NAME' created"
     fi
 
 # Add labels to issue (space-separated label names)
-[group: 'codeberg']
+[group: 'github']
 issue-label number *labels:
     #!/usr/bin/env bash
     set -euo pipefail
     for label in {{labels}}; do
-        fj issue edit {{number}} labels -a "$label"
+        gh issue edit {{number}} -R {{github_repo}} --add-label "$label"
         echo "✓ Label '$label' added to issue #{{number}}"
     done
 
 # Create a label (if missing, with random color) and assign it to an issue
-[group: 'codeberg']
+[group: 'github']
 issue-label-create number name:
     #!/usr/bin/env bash
     set -euo pipefail
-    COLORS=("#e11d48" "#ea580c" "#d97706" "#65a30d" "#16a34a" "#059669" "#0891b2" "#2563eb" "#7c3aed" "#c026d3" \
-            "#be185d" "#b45309" "#4d7c0f" "#0e7490" "#1d4ed8" "#6d28d9" "#a21caf" "#be123c" "#15803d" "#0369a1")
+    COLORS=("e11d48" "ea580c" "d97706" "65a30d" "16a34a" "059669" "0891b2" "2563eb" "7c3aed" "c026d3" \
+            "be185d" "b45309" "4d7c0f" "0e7490" "1d4ed8" "6d28d9" "a21caf" "be123c" "15803d" "0369a1")
     RANDOM_COLOR=${COLORS[$((RANDOM % ${#COLORS[@]}))]}
-    TOKEN=$(grep "^CODEBERG_API_TOKEN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'")
-    REPO=$(git remote get-url origin | sed 's|.*codeberg.org[:/]\(.*\)\.git|\1|;s|.*codeberg.org[:/]\(.*\)|\1|')
-    LABEL_ID=$(curl -s "https://codeberg.org/api/v1/repos/${REPO}/labels" \
-      -H "Authorization: token ${TOKEN}" | jq -r '.[] | select(.name == "{{name}}") | .id')
-    if [ -z "$LABEL_ID" ]; then
-        echo "Creating label '{{name}}' with color ${RANDOM_COLOR}..."
-        LABEL_ID=$(curl -s -X POST "https://codeberg.org/api/v1/repos/${REPO}/labels" \
-          -H "Authorization: token ${TOKEN}" \
-          -H "Content-Type: application/json" \
-          -d "{\"name\":\"{{name}}\",\"color\":\"${RANDOM_COLOR}\"}" | jq -r '.id')
-        echo "✓ Label '{{name}}' created (id: ${LABEL_ID})"
+    NAME={{quote(name)}}
+    if gh label list -R {{github_repo}} --limit 200 --json name --jq '.[].name' | grep -qxF "$NAME"; then
+        echo "✓ Label '$NAME' already exists"
     else
-        echo "✓ Label '{{name}}' already exists (id: ${LABEL_ID})"
+        gh label create "$NAME" -R {{github_repo}} --color "$RANDOM_COLOR"
+        echo "✓ Label '$NAME' created with color #${RANDOM_COLOR}"
     fi
-    fj issue edit {{number}} labels -a "{{name}}"
+    gh issue edit {{number}} -R {{github_repo}} --add-label "$NAME"
     echo "✓ Label assigned to issue #{{number}}"
 
 # Create new issue (body optional)
-[group: 'codeberg']
+[group: 'github']
 issue-create title body="":
     #!/usr/bin/env bash
     set -euo pipefail
-    if [ -z "{{body}}" ]; then
-        EDITOR=true fj issue create "{{title}}" --no-template
+    BODY={{quote(body)}}
+    if [ -z "$BODY" ]; then
+        gh issue create -R {{github_repo}} --title {{quote(title)}} --body ""
     else
-        TMPFILE=$(mktemp /tmp/issue-body-XXXXXX.md)
-        echo "{{body}}" > "$TMPFILE"
-        EDITOR=true fj issue create "{{title}}" --body-file "$TMPFILE" --no-template
-        rm "$TMPFILE"
+        gh issue create -R {{github_repo}} --title {{quote(title)}} --body "$BODY"
     fi
 
+# Create new issue with body read from a file
+[group: 'github']
+issue-create-file title file:
+    gh issue create -R {{github_repo}} --title {{quote(title)}} --body-file {{quote(file)}}
+
 # Edit issue body from file (usage: just issue-edit-body 42 /path/to/body.md)
-[group: 'codeberg']
+[group: 'github']
 issue-edit-body number file:
-    fj issue edit {{number}} body "$(cat {{file}})"
+    gh issue edit {{number}} -R {{github_repo}} --body-file {{quote(file)}}
 
 # Create a pull request from current branch to main
-[group: 'codeberg']
+[group: 'github']
 pr-create title body="" base="main":
-    fj pr create -t "{{title}}" -b "{{body}}" -B "{{base}}" -H "$(git branch --show-current)"
+    gh pr create -R {{github_repo}} --title {{quote(title)}} --body {{quote(body)}} --base {{base}} --head "$(git branch --show-current)"
 
 # ============================================================================
-# Codeberg Releases
+# GitHub Releases
 # ============================================================================
 
 # List all releases
-[group: 'codeberg']
+[group: 'github']
 release-list:
-    fj release list --include-draft --include-prerelease
+    gh release list -R {{github_repo}} --limit 50
 
 # Show release details
-[group: 'codeberg']
+[group: 'github']
 release-show tag:
-    fj release view "{{tag}}" --by-tag
+    gh release view "{{tag}}" -R {{github_repo}}
 
-# Create a new release (creates tag, pushes main+tag, creates Codeberg release via fj)
+# Create a new release (creates tag, pushes main+tag, creates GitHub release via gh)
 # Pass notes_file to use custom rich notes; omit for auto-generated notes from commits
-[group: 'codeberg']
+[group: 'github']
 release-create tag previous_tag="" notes_file="" draft="false" prerelease="false":
     #!/usr/bin/env bash
     set -euo pipefail
-
-    REPO=$(git remote get-url origin | sed 's|.*codeberg.org[:/]\(.*\)\.git|\1|;s|.*codeberg.org[:/]\(.*\)|\1|')
 
     # Push main to origin
     echo "📤 Pushing main to origin..."
@@ -368,31 +365,49 @@ release-create tag previous_tag="" notes_file="" draft="false" prerelease="false
                 echo ""
             fi
             echo "### 📖 Full Changelog"
-            echo "https://codeberg.org/${REPO}/compare/${PREV_TAG}...{{tag}}"
+            echo "https://github.com/{{github_repo}}/compare/${PREV_TAG}...{{tag}}"
         } > "$NOTES_FILE"
     fi
 
-    # Create release via fj
-    echo "🚀 Creating release on Codeberg..."
-    fj release create "{{tag}}" -r "$REPO" --tag "{{tag}}" --body "$(cat "$NOTES_FILE")"
+    # Create release via gh
+    echo "🚀 Creating release on GitHub..."
+    EXTRA=""
+    if [ "{{draft}}" = "true" ]; then EXTRA="$EXTRA --draft"; fi
+    if [ "{{prerelease}}" = "true" ]; then EXTRA="$EXTRA --prerelease"; fi
+    gh release create "{{tag}}" -R {{github_repo}} --title "{{tag}}" --notes-file "$NOTES_FILE" $EXTRA
     echo ""
     echo "✓ Release {{tag}} created!"
 
 # Delete a release (use with caution!)
-[group: 'codeberg']
+[group: 'github']
 release-delete tag:
-    fj release delete {{tag}}
+    gh release delete "{{tag}}" -R {{github_repo}} --yes
 
 # ============================================================================
-# Beans
+# Tasks
 # ============================================================================
 
-# List active beans (excludes completed and scrapped)
-[group: 'beans']
-beans:
-    beans list --ready
+# List ready tasks
+[group: 'tasks']
+tasks:
+    taskdb list --status ready
 
-# List completed beans
-[group: 'beans']
-beans_completed:
-    beans list -s completed
+# List tasks by status (draft|ready|in-progress|complete)
+[group: 'tasks']
+tasks-status status:
+    taskdb list --status {{status}}
+
+# Show a task
+[group: 'tasks']
+task number:
+    taskdb view {{number}}
+
+# Create a new task
+[group: 'tasks']
+task-create title description="":
+    taskdb create {{quote(title)}} --description {{quote(description)}}
+
+# Mark a task as complete
+[group: 'tasks']
+task-complete number:
+    taskdb complete {{number}}

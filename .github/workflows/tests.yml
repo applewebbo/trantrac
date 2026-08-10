@@ -1,0 +1,58 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: test-secret-key-for-ci
+      DEBUG: true
+      ADMIN_EMAIL: admin@test.local
+      MAILGUN_API_KEY: test-mailgun-key
+      MAILGUN_API_URL: https://api.mailgun.net/v3
+      MAILGUN_SENDER_DOMAIN: mg.test.local
+    steps:
+    - uses: actions/checkout@v5
+
+      # WeasyPrint system dependencies
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          libpango-1.0-0 libpangoft2-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
+
+    - uses: astral-sh/setup-uv@v6
+      with:
+        enable-cache: true
+
+    - name: Install Python
+      run: uv python install
+
+    - name: Install dependencies
+      run: uv sync
+
+    - name: Run tests
+      run: uv run pytest tests/ -n auto --reuse-db --cov --cov-report=term-missing --cov-fail-under=100
+
+  notify:
+    needs: test
+    if: failure() && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Notify Telegram
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: |
+        {
+          echo "CI FAILED [${{ github.repository }}] branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.event.head_commit.message }}"
+          echo "Link: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        } > /tmp/msg.txt
+        curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+          --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+          --data-urlencode "text@/tmp/msg.txt"

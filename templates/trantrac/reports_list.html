@@ -4,17 +4,17 @@
 
 {% block content %}
 <meta name="robots" content="noindex">
-<div class="container px-4 my-2 mx-auto max-w-screen-sm sm:my-8">
+<div class="container mx-auto my-2 max-w-screen-sm px-4 sm:my-8">
   <h1 class="mb-6 text-2xl font-semibold">Report Mensili</h1>
 
   {% if user.is_staff %}
-  <div class="relative mb-8 border shadow-sm card bg-base-100 border-base-200">
+  <div class="card bg-base-100 border-base-200 relative mb-8 border shadow-sm">
     <div id="regen-spinner"
-         class="flex absolute inset-0 z-50 justify-center items-center htmx-indicator bg-base-100/70">
+         class="htmx-indicator bg-base-100/70 absolute inset-0 z-50 flex items-center justify-center">
       <span class="loading loading-spinner loading-lg text-warning"></span>
     </div>
     <div class="card-body">
-      <h2 class="text-base card-title">Rigenera report</h2>
+      <h2 class="card-title text-base">Rigenera report</h2>
       <form hx-post="{% url 'regenerate_report' %}"
             hx-target="#reports-section"
             hx-swap="outerHTML"
@@ -22,26 +22,26 @@
             hx-disabled-elt="find [type='submit']">
         {% csrf_token %}
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
-          <div class="flex-1 form-control">
+          <div class="form-control flex-1">
             <label class="label" for="id_month">
               <span class="label-text">Mese</span>
             </label>
-            <select name="month" id="id_month" class="w-full select select-bordered">
+            <select name="month" id="id_month" class="select select-bordered w-full">
               <option value="">-- Seleziona mese --</option>
               {% for num, name in months.items %}
                 <option value="{{ num }}">{{ name }}</option>
               {% endfor %}
             </select>
           </div>
-          <div class="flex-1 form-control">
+          <div class="form-control flex-1">
             <label class="label" for="id_year">
               <span class="label-text">Anno</span>
             </label>
-            <input type="number" name="year" id="id_year" class="w-full input input-bordered"
+            <input type="number" name="year" id="id_year" class="input input-bordered w-full"
                    placeholder="es. 2026" min="2020" max="2099">
           </div>
-          <div class="sm:pb-0 form-control">
-            <button type="submit" class="w-full sm:w-auto btn btn-warning">Rigenera</button>
+          <div class="form-control sm:pb-0">
+            <button type="submit" class="btn btn-warning w-full sm:w-auto">Rigenera</button>
           </div>
         </div>
       </form>

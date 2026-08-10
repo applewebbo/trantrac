@@ -80,7 +80,7 @@ TranTrac includes a Telegram bot for quick expense tracking on the go. Features:
 
 ```bash
 # Clone the repository
-git clone https://codeberg.org/webbografico/trantrac.git
+git clone https://github.com/applewebbo/trantrac.git
 cd trantrac
 
 # Bootstrap the project
@@ -124,4 +124,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Author
 
-Enrico Bonardi - [webbografico@codeberg.org](https://codeberg.org/webbografico)
+Enrico Bonardi - [e.bonardi@me.com](https://github.com/applewebbo)

@@ -1,0 +1,1 @@
+../../all/00000/00002-voice-input-setup-self-hosted-whisper-service-faster-whisper-docker.md

@@ -2,7 +2,7 @@
 
 <div class="relative">
   <div id="spinner"
-       class="flex absolute inset-0 z-50 justify-center items-center pointer-events-none htmx-indicator bg-base-100/70">
+       class="htmx-indicator bg-base-100/70 pointer-events-none absolute inset-0 z-50 flex items-center justify-center">
     <span class="loading loading-spinner loading-lg text-primary"></span>
   </div>
   <form hx-post="{% url 'index' %}"

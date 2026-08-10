@@ -1,0 +1,1 @@
+../../all/00000/00006-voice-input-add-web-speech-api-component-with-alpinejs-adapt-from-schoolmenu.md

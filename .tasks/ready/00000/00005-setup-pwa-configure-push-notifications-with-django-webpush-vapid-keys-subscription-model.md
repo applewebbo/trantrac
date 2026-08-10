@@ -1,0 +1,1 @@
+../../all/00000/00005-setup-pwa-configure-push-notifications-with-django-webpush-vapid-keys-subscription-model.md

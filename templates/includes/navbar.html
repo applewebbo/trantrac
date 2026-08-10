@@ -1,20 +1,20 @@
 <div x-data="{ open: false }">
-  <nav class="container mx-auto mb-2 max-w-screen-md bg-base-100">
-    <div class="flex flex-wrap justify-between items-center py-2 px-0 mx-auto max-w-screen-sm sm:p-4">
+  <nav class="bg-base-100 container mx-auto mb-2 max-w-screen-md">
+    <div class="mx-auto flex max-w-screen-sm flex-wrap items-center justify-between px-0 py-2 sm:p-4">
       <a href="{% url 'index' %}"
-         class="flex items-center space-x-1 sm:space-x-3 rtl:space-x-reverse grow">
+         class="flex grow items-center space-x-1 sm:space-x-3 rtl:space-x-reverse">
         {% heroicon_outline "banknotes" class="size-6 sm:size-7" %}
         <div class="self-center text-xl font-semibold tracking-tight whitespace-nowrap sm:text-2xl">
-          <span class="italic font-light">Tran</span>Trac
+          <span class="font-light italic">Tran</span>Trac
         </div>
       </a>
-      <div class="flex gap-x-1 items-center sm:gap-x-2">
+      <div class="flex items-center gap-x-1 sm:gap-x-2">
         {% if user.is_authenticated %}
           <div class="hidden gap-x-2 md:flex">
             <a href="{% url 'refresh_categories' %}"
                hx-get="{% url 'refresh_categories' %}"
                hx-indicator="#spinner"
-               class="flex items-center btn btn-sm">
+               class="btn btn-sm flex items-center">
               {% heroicon_micro 'arrow-path' class='size-5' %}
               Sincronizza
             </a>
@@ -23,11 +23,11 @@
                     hx-target="#modal-content"
                     hx-swap="innerHTML"
                     onclick="window.modal.showModal()"
-                    class="flex items-center btn btn-sm">
+                    class="btn btn-sm flex items-center">
               {% heroicon_micro 'document-arrow-up' class='size-5' %}
               Carica
             </button>
-            <a href="{% url 'reports_list' %}" class="flex items-center btn btn-sm">
+            <a href="{% url 'reports_list' %}" class="btn btn-sm flex items-center">
               {% heroicon_micro 'document-chart-bar' class='size-5' %}
               Report
             </a>
@@ -65,7 +65,7 @@
               </svg>
           </button>
           <button type="button"
-                  class="md:hidden btn btn-sm btn-ghost"
+                  class="btn btn-sm btn-ghost md:hidden"
                   aria-controls="navbar-cta"
                   aria-expanded="false"
                   x-on:click="open = ! open">
@@ -76,7 +76,7 @@
         {% endif %}
       </div>
     </div>
-    <div class="justify-between items-center w-full md:hidden"
+    <div class="w-full items-center justify-between md:hidden"
          x-cloak
          x-show="open"
          x-collapse.duration.500>
@@ -85,7 +85,7 @@
           <a href="{% url 'refresh_categories' %}"
              hx-get="{% url 'refresh_categories' %}"
              hx-indicator="#spinner"
-             class="flex items-center w-full btn">
+             class="btn flex w-full items-center">
             {% heroicon_micro 'arrow-path' class='size-5' %}
             Sincronizza Categorie
           </a>
@@ -95,13 +95,13 @@
              hx-target="#modal-content"
              hx-swap="innerHTML"
              onclick="window.modal.showModal()"
-             class="flex items-center w-full btn">
+             class="btn flex w-full items-center">
             {% heroicon_micro 'document-arrow-up' class='size-5' %}
             Importa Transazioni
           </a>
         </li>
         <li>
-          <a href="{% url 'reports_list' %}" class="flex items-center w-full btn">
+          <a href="{% url 'reports_list' %}" class="btn flex w-full items-center">
             {% heroicon_micro 'document-chart-bar' class='size-5' %}
             Report Mensili
           </a>
@@ -109,7 +109,7 @@
         <li>
           <form action="{% url 'account_logout' %}" method="post">
             {% csrf_token %}
-            <button type="submit" class="flex items-center w-full btn btn-primary">
+            <button type="submit" class="btn btn-primary flex w-full items-center">
               {% heroicon_micro 'arrow-right-start-on-rectangle' class='size-5' %}
               Esci
             </button>

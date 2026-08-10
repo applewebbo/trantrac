@@ -1,9 +1,9 @@
 {% if suggestions %}
-<div class="flex flex-wrap gap-2 mt-2 mb-1" id="category-suggestions-inner">
-  <span class="self-center text-xs text-base-content/60">Suggeriti:</span>
+<div class="mt-2 mb-1 flex flex-wrap gap-2" id="category-suggestions-inner">
+  <span class="text-base-content/60 self-center text-xs">Suggeriti:</span>
   {% for s in suggestions %}
   <button type="button"
-          class="transition-colors cursor-pointer badge badge-outline badge-primary hover:badge-primary"
+          class="badge badge-outline badge-primary hover:badge-primary cursor-pointer transition-colors"
           onclick="(function(){
             var catSel = document.getElementById('id_category');
             catSel.value = '{{ s.category_id }}';

@@ -328,4 +328,4 @@ python manage.py cleanup_auth_sessions
 
 For issues or questions:
 - Check [GitHub Issues](https://github.com/your-repo/issues)
-- Contact: webbografico@codeberg.org
+- Contact: e.bonardi@me.com

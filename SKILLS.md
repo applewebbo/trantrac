@@ -13,7 +13,7 @@ Custom skills available for common Django workflows. Use these for automated qua
 3. Detects dangerous operations (RenameField, RemoveField, AddField without default)
 4. Asks for confirmation before creating
 5. Creates migrations and re-runs tests to verify
-6. Reminds to commit migrations and update related beans
+6. Reminds to commit migrations and update related tasks
 
 **Example workflow:**
 ```bash
@@ -34,7 +34,7 @@ Custom skills available for common Django workflows. Use these for automated qua
 4. Security audit (`just secure`)
 5. Full test suite with 100% coverage (`just ftest`)
 6. Counts TODO/FIXME comments
-7. Lists open beans
+7. Lists ready tasks
 
 **Output:** Health report with overall status (HEALTHY / NEEDS ATTENTION / FAILING)
 
@@ -104,7 +104,7 @@ Custom skills available for common Django workflows. Use these for automated qua
 3. Fetches issue details to enrich release descriptions
 4. Merges to main with `--ff-only` (linear history)
 5. Creates tag and pushes to origin
-6. Creates Codeberg release with detailed, human-readable release notes
+6. Creates GitHub release with detailed, human-readable release notes
 7. Labels closed issues with release version
 8. Optionally creates next release branch
 
@@ -231,13 +231,13 @@ Custom skills available for common Django workflows. Use these for automated qua
 # (migrations, schema changes, bulk updates, etc.)
 ```
 
-## Skill Integration with Beans
+## Skill Integration with taskdb
 
-- **`/makemigrations`**: Reminds to update related beans after creating migrations
-- **`/check-all`**: Shows count of open beans ready to work on
-- **`/pre-deploy`**: Suggests marking completed beans as done before release
-- **`/release`**: Updates beans to completed and adds release version metadata
-- **`/commit`**: Include bean file changes in commits when using beans for task tracking
+- **`/makemigrations`**: Reminds to update related tasks after creating migrations
+- **`/check-all`**: Shows count of ready tasks to work on
+- **`/pre-deploy`**: Suggests completing finished tasks before release
+- **`/release`**: Marks tasks as complete and adds release version metadata
+- **`/commit`**: Include `.tasks/` file changes in commits when using taskdb for task tracking
 
 ## Best Practices
 

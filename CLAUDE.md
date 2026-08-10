@@ -14,7 +14,7 @@ Family Finance Tracker that syncs transactions to Google Sheets. Built with Djan
 - **Server**: Granian (WSGI) with uvloop
 - **Package Management**: uv for Python
 - **Task Runner**: just (see justfile)
-- **Repository**: Codeberg (https://codeberg.org)
+- **Repository**: GitHub (https://github.com/applewebbo/trantrac)
 
 ## Development Commands
 
@@ -62,18 +62,30 @@ just docker_build  # Build and start
 just docker_down  # Stop and remove volumes
 ```
 
-### Issue Management (Codeberg)
+### Issue Management (GitHub)
 ```bash
 just issues [state]  # List issues (state: open|closed|all, default: open)
 just issue <number>  # Show issue details
 just issue-create <title> [body]  # Create new issue
+just issue-create-file <title> <file>  # Create new issue with body from file
 just issue-comment <number> <text>  # Add comment to issue
 just issue-close <number>  # Close issue
 just issue-reopen <number>  # Reopen issue
 just issue-label <number> <labels>  # Add labels (space-separated)
 ```
 
-**Note**: The project is hosted on Codeberg. Use the justfile commands above to manage issues instead of GitHub CLI.
+**Note**: The project is hosted on GitHub (`applewebbo/trantrac`). Use the justfile commands above (backed by the `gh` CLI) to manage issues.
+
+### Task Management (taskdb)
+```bash
+just tasks  # List ready tasks
+just tasks-status <status>  # List tasks by status (draft|ready|in-progress|complete)
+just task <number>  # Show a task
+just task-create <title> [description]  # Create a new task
+just task-complete <number>  # Mark a task as complete
+```
+
+**Note**: Tasks live in `.tasks/` and are managed with `taskdb` (replaced the previous `beans` tracker).
 
 ## Architecture
 

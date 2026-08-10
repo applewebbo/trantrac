@@ -1,0 +1,1 @@
+../../all/00000/00008-quick-ux-add-transaction-templates-save-common-expenses-for-quick-select.md
